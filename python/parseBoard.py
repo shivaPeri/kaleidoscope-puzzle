@@ -6,19 +6,16 @@ colors = np.array([[0,0,0],         # black
                     [255,255,0],    # yellow
                     [0,0,255]])     # blue
 
-# TODO given cropped board image, converts to bitstring
-# TODO writes new boards to board folder
-def im2board(im, name="new-board"):
+# given cropped board image, converts to bitstring
+def im2board(im):
     
-    w, h, _ = im.shape
-    square = w // 8
-
     out = ""
+    square = im.shape[0] // 8
 
     for i in range(8):
         for j in range(8):
-            y = i * square + square // 2
-            x = j * square + square // 2
+            x = i * square + square // 2
+            y = j * square + square // 2
 
             pix = im[x,y]
             similarity = colors - pix
