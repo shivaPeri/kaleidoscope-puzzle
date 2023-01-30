@@ -1,11 +1,7 @@
-import cv2 as cv
 import numpy as np
-
-import time
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support.expected_conditions import presence_of_element_located
+import cv2, requests, imageio, urllib.request
+from bs4 import BeautifulSoup
+from tqdm import tqdm
 
 url = "http://www.users.on.net/~mikegatley/kaleidoscope/all1.html"
 url2 = "http://www.users.on.net/~mikegatley/kaleidoscope/all2.html"
@@ -33,36 +29,50 @@ def im2board(im):
 
     return out
 
-def scrapeBoardsFromURL(url):
-    with webdriver.Chrome(executable_path='/Users/shivaperi/bin/chromedriver') as driver:
+def scrapeBoardsFromURL(url, filepath, include_comma=True):
+    response = requests.get(url)
 
-        driver.get(url)
-        time.sleep(30)
+    ignore = [ "e-mail me", "web site hit counter" ]
 
-        i = 0
-        while i < 200:
+    soup = BeautifulSoup(response.content, 'html.parser')
+    images = soup.find_all('img')
 
-            wait = WebDriverWait(driver, 2)
+    with open(filepath, "a") as fd:
 
-            try:
-                button = wait.until(presence_of_element_located((By.ID, 'download-button-' + model_id)))
-                button.click()
+        for i, im in tqdm(enumerate(images)):
 
-                button = wait.until(presence_of_element_located((By.ID, 'download-option-zip')))
-                button.click()
-            except:
-                continue
-            
-            print(i)
-            i += 1
+            title = im.get('alt')
+            if title not in ignore:
+
+                src = im.get('src')
+                imdata = urllib.request.urlopen(src).read()
+                imbytes = bytearray(imdata)
+                open("tmp.gif","wb+").write(imbytes)    # write to tmp file
+
+                gif = imageio.mimread("tmp.gif")
+                name = title.replace(' ', '-').lower()
+                img = cv2.cvtColor(gif[0], cv2.COLOR_RGBA2RGB)
+                add_comma = "," if include_comma or (i != len(images) - 1) else ""
+                fd.write('\t"{}": "{}"{}\n'.format(name, im2board(img), add_comma))
 
     print('done scraping')
 
 if __name__ == "__main__":
 
+    # testing im2board function
     path = "../boards/images/"
     fname = "kitten-playing.png"
-    img = cv.imread(path + fname)
-    img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-
+    img = cv2.imread(path + fname)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     print(im2board(img))
+
+    # testing web scraping
+    filepath = '../boards/scraped-boards.json'
+    with open(filepath, "w") as fd:
+        fd.write("{\n")
+
+    scrapeBoardsFromURL(url, filepath)
+    scrapeBoardsFromURL(url2, filepath, False)
+
+    with open(filepath, "a") as fd:
+        fd.write("}")

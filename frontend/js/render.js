@@ -23,7 +23,7 @@ function setup() {
     fetch('../../boards/scraped-boards.json')
         .then(response => response.json())
         .then(data => {
-            testboard = data["kitten-playing"]
+            testboard = data["snake-shedding-its-skin"]
             console.log(testboard)
 
             for (let i = 0; i < testboard.length; i++) {
