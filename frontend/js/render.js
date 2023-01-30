@@ -19,6 +19,26 @@ function setup() {
     refboard = new Board(puzzles["chaos"], 100, 100, true)
     gameboard = new Board(puzzles["new"], refboard.arr.length * SQSIZE + 200, 100, false)
 
+    let testboard
+    fetch('../../boards/scraped-boards.json')
+        .then(response => response.json())
+        .then(data => {
+            testboard = data["kitten-playing"]
+            console.log(testboard)
+
+            for (let i = 0; i < testboard.length; i++) {
+                let row = Math.floor(i/8);
+                let col = i % 8;
+
+                console.log(row, col)
+        
+                refboard.arr[row][col] = parseInt(testboard[i]) + 1
+            }
+            console.log(refboard.arr)
+        })
+        .catch(error => console.log(error))
+
+
     for (var i = 0; i < pieces.length; i++)
         gamepieces.push(new Piece(pieces[i]))
 }

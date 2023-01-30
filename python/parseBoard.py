@@ -27,7 +27,7 @@ def im2board(im):
 if __name__ == "__main__":
 
     path = "../boards/images/"
-    fname = "emu.png"
+    fname = "kitten-playing.png"
     img = cv.imread(path + fname)
     img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
 
