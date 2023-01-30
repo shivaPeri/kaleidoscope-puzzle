@@ -3,6 +3,8 @@ const SQSIZE = 50
 let REDFILL, BLACKFILL, BLUEFILL, YELLOWFILL
 let gamepieces = []
 let refboard, gameboard
+let games
+let game_name = "cancer"
 
 /* ***************** INIT + MAIN LOOP ******************* */
 
@@ -16,22 +18,20 @@ function setup() {
     var cnv = createCanvas(window.innerWidth, window.innerHeight);
     cnv.position(0, 0, 'fixed')
 
-    refboard = new Board(puzzles["chaos"], 100, 100, true)
-    gameboard = new Board(puzzles["new"], refboard.arr.length * SQSIZE + 200, 100, false)
+    refboard = new Board(puzzles["new"], 100, 100, true)
+    gameboard = new Board(puzzles["new2"], refboard.arr.length * SQSIZE + 200, 100, false)
 
-    let games
-    let testboard
     fetch('../../boards/scraped-boards.json')
         .then(response => response.json())
         .then(data => {
-            testboard = data["cancer"]
-            games = Object.keys(data)
-
-            for (let i = 0; i < testboard.length; i++) {
+            games = data
+            for (let i = 0; i < data[game_name].length; i++) {
                 let row = Math.floor(i/8);
                 let col = i % 8;
-                refboard.arr[row][col] = parseInt(testboard[i])
+                refboard.arr[row][col] = parseInt(data[game_name][i])
             }
+
+            redraw()
         })
         .catch(error => console.log(error))
 
@@ -135,12 +135,29 @@ class Piece {
 class Board {
     constructor(ndarray, x, y, isRef) {
         this.arr = ndarray
+        this.notes = notes
         this.x = x
         this.y = y
         this.ref = isRef
 
         this.w = ndarray[0].length * SQSIZE
         this.h = ndarray.length * SQSIZE
+    }
+
+    drawNotes() {
+        for (let i = 0; i < this.arr.length; i++) {
+            for (let j = 0; j < this.arr[0].length; j++) {
+
+                let offset = 3
+                let sx = this.x + i * SQSIZE
+                let sy = this.y + j * SQSIZE
+                stroke(255)
+                strokeWeight(5)
+                strokeCap(ROUND)
+                line(sx + offset, sy, sx + SQSIZE - offset, sy)
+                line(sx, sy + offset, sx, sy + SQSIZE - offset)
+            }
+        }
     }
 
     draw() {
@@ -159,6 +176,10 @@ class Board {
 
                 rect(this.x + j * SQSIZE, this.y + i * SQSIZE, SQSIZE, SQSIZE)
             }
+        }
+
+        if (this.ref) {
+            this.drawNotes()
         }
     }
 
@@ -207,14 +228,17 @@ function keyPressed() {
 
 function mouseClicked() {
     for (var piece of gamepieces) {
+
+        if (piece.selected) {
+            piece.selected = !piece.selected
+            return
+        }
+
         if (piece.mouseOver()) {
 
             piece.selected = !piece.selected
-            if (piece.selected) {
-                piece.dx = piece.x - mouseX
-                piece.dy = piece.y - mouseY
-            }
-
+            piece.dx = piece.x - mouseX
+            piece.dy = piece.y - mouseY
         }
     }
 }
