@@ -178,9 +178,7 @@ class Board {
             }
         }
 
-        if (this.ref) {
-            this.drawNotes()
-        }
+        // if (this.ref) this.drawNotes()
     }
 
     mouseOver() {
