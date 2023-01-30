@@ -30,7 +30,7 @@ function setup() {
             for (let i = 0; i < testboard.length; i++) {
                 let row = Math.floor(i/8);
                 let col = i % 8;
-                refboard.arr[row][col] = parseInt(testboard[i]) + 1
+                refboard.arr[row][col] = parseInt(testboard[i])
             }
         })
         .catch(error => console.log(error))

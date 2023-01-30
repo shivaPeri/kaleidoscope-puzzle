@@ -1,16 +1,15 @@
 use std::fs;
-use std::env;
 use std::path::Path;
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 enum Color {
-    EMPTY = -1,
-    BLACK = 0,
-    RED = 1,
-    YELLOW = 2,
-    BLUE = 3
+    EMPTY = 0,
+    BLACK = 1,
+    RED = 2,
+    YELLOW = 3,
+    BLUE = 4
 }
 
 
@@ -26,15 +25,15 @@ fn load_game(path: &Path, game: &str) {
     let data: Data = serde_json::from_str(&file).expect("Unable to parse json");
     let game_str = data.0.get(game).unwrap();
 
-    // take game_str and create a vector mapping each character to the corresponding parsed integer
+    // take game_str and create a vector mapping each character to corresponding color
     let mut board = Board::default();
     for c in game_str.chars() {
         let color = match c {
-            '0' => Color::BLACK,
-            '1' => Color::RED,
-            '2' => Color::YELLOW,
-            '3' => Color::BLUE,
-            _ => Color::EMPTY
+            '1' => Color::BLACK,
+            '2' => Color::RED,
+            '3' => Color::YELLOW,
+            '4' => Color::BLUE,
+            _ => Color::EMPTY,
         };
         board.0.push(color);
     }

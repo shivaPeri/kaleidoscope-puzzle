@@ -25,7 +25,7 @@ def im2board(im):
             pix = im[x,y]
             similarity = colors - pix
             scores = np.linalg.norm(similarity, axis=1)
-            out += str(scores.argmin())
+            out += str(scores.argmin() + 1)
 
     return out
 
