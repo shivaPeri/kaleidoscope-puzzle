@@ -1,4 +1,5 @@
 boards/images/puzzles
 target
 
+Cargo.lock
 .DS_Store
