@@ -36,7 +36,199 @@ struct Data(HashMap<String, String>);
 pub type Board = Vec<Color>;
 pub type Piece = Vec<u8>;
 
+struct Piece2 {
+    idx: u8,
+    configs: Vec<Piece>
+}
+
 pub const BOARD_SIZE: usize = 8;
+
+fn load_pieces_2() -> Vec<Piece2> {
+
+    let mono_1 = Piece2{
+        idx: 1,
+        configs: vec![
+            vec![1,1, RED],
+            vec![1,1, BLACK],
+        ];
+    };
+
+    let mono_2 = Piece2{
+        idx: 2,
+        configs: vec![
+            vec![1,1, BLUE],
+            vec![1,1, BLACK],
+        ];
+    };
+
+    let domo_1 = Piece2{
+        idx: 3,
+        configs: vec![
+            vec![1,2, RED, BLACK],
+            vec![1,2, BLACK, RED],
+            vec![1,2, BLUE, BLACK],
+            vec![1,2, BLACK, BLUE],
+            vec![2,1, RED, BLACK],
+            vec![2,1, BLACK, RED],
+            vec![2,1, BLUE, BLACK],
+            vec![2,1, BLACK, BLUE],
+        ];
+    };
+
+    let trom_1 = Piece2{
+        idx: 4,
+        configs: vec![
+            vec![1,3, RED, BLACK, BLACK],
+            vec![1,3, YELLOW, BLACK, BLUE],
+            vec![1,3, BLUE, BLACK, YELLOW],
+            vec![3,1, RED, BLACK, BLACK],
+            vec![3,1, YELLOW, BLACK, BLUE],
+            vec![3,1, BLUE, BLACK, YELLOW],
+        ];
+    };
+
+    let trom_2 = Piece2{
+        idx: 5,
+        configs: vec![
+            vec![1,3, BLACK, RED, BLACK],
+            vec![1,3, BLACK, YELLOW, BLACK],
+            vec![3,1, BLACK, RED, BLACK],
+            vec![3,1, BLACK, YELLOW, BLACK],
+        ];
+    };
+
+    let trom_3 = Piece2{
+        idx: 6,
+        configs: vec![
+            vec![2,2, EMPTY, BLACK, RED, BLACK],
+            vec![2,2, BLACK, EMPTY, RED, BLACK],
+            vec![2,2, BLACK, RED, EMPTY, BLACK],
+            vec![2,2, BLACK, RED, BLACK, EMPTY],
+            vec![2,2, EMPTY, BLACK, YELLOW, BLACK],
+            vec![2,2, BLACK, EMPTY, YELLOW, BLACK],
+            vec![2,2, BLACK, YELLOW, EMPTY, BLACK],
+            vec![2,2, BLACK, YELLOW, BLACK, EMPTY],
+        ];
+    };
+
+    // this might be wrong
+    let trom_4 = Piece2{
+        idx: 7,
+        configs: vec![
+            vec![2,2, EMPTY, RED, BLACK, RED],
+            vec![2,2, RED, EMPTY, BLACK, RED],
+            vec![2,2, RED, BLACK, EMPTY, RED],
+            vec![2,2, RED, BLACK, RED, EMPTY],
+            vec![2,2, EMPTY, BLUE, YELLOW, BLACK],
+            vec![2,2, BLUE, EMPTY, YELLOW, BLACK],
+            vec![2,2, BLUE, YELLOW, EMPTY, BLACK],
+            vec![2,2, BLUE, YELLOW, BLACK, EMPTY],
+        ];
+    };
+
+    let tetr_1 = Piece2{
+        idx: 8,
+        configs: vec![
+            vec![1,4, RED, BLACK, RED, BLACK],
+            vec![1,4, BLACK, RED, BLACK, RED],
+            vec![1,4, BLUE, BLACK, YELLOW, BLACK],
+            vec![1,4, BLACK, YELLOW, BLACK, BLUE],
+        ];
+    };
+
+    let tetr_2 = Piece2{
+        idx: 9,
+        configs: vec![
+            vec![2,2, RED, BLACK, RED, BLACK],
+            vec![2,2, BLACK, RED, BLACK, RED],
+            vec![2,2, BLUE, BLACK, BLACK, YELLOW],
+            vec![2,2, YELLOW, BLACK, BLACK, BLUE],
+            vec![2,2, BLACK, YELLOW, BLUE, BLACK],
+            vec![2,2, BLACK, BLUE, YELLOW, BLACK],
+        ];
+    };
+
+    let tetr_3 = Piece2{
+        idx: 10,
+        configs: vec![
+            vec![2,3, EMPTY, EMPTY, BLACK, RED, BLACK, RED],
+            vec![3,2, EMPTY, RED, EMPTY, BLACK, BLACK, RED],
+            vec![2,3, RED, BLACK, RED, BLACK, EMPTY, EMPTY],
+            vec![3,2, RED, EMPTY, BLACK, EMPTY, RED, BLACK],
+            // todo: add more
+        ];
+    };
+
+    // todo: add more *****************************************************
+    let tetr_4 = Piece2{
+        idx: 11,
+        configs: vec![
+            vec![2,3, ],
+        ];
+    };
+
+    let tetr_5 = Piece2{
+        idx: 12,
+        configs: vec![
+            vec![2,3, ],
+        ];
+    };
+
+
+    let tetr_6 = Piece2{
+        idx: 13,
+        configs: vec![
+            vec![2,3, ],
+        ];
+    };
+
+    let tetr_7 = Piece2{
+        idx: 14,
+        configs: vec![
+            vec![2,3, ],
+        ];
+    };
+
+    let tetr_8 = Piece2{
+        idx: 15,
+        configs: vec![
+            vec![2,3, ],
+        ];
+    };
+
+    let tetr_9 = Piece2{
+        idx: 16,
+        configs: vec![
+            vec![2,3, ],
+        ];
+    };
+
+    let tetr_10 = Piece2{
+        idx: 17,
+        configs: vec![
+            vec![2,3, ],
+        ];
+    };
+
+    // todo: add more *****************************************************
+
+    let oct_1 = Piece2{
+        idx: 18,
+        configs: vec![
+            vec![1,8, BLACK, RED, BLACK, RED, BLACK, RED, BLACK, RED],
+            vec![1,8, RED, BLACK, RED, BLACK, RED, BLACK, RED, BLACK],
+            vec![8,1, BLACK, RED, BLACK, RED, BLACK, RED, BLACK, RED],
+            vec![8,1, RED, BLACK, RED, BLACK, RED, BLACK, RED, BLACK],
+            vec![1,8, BLACK, YELLOW, BLACK, BLUE, BLACK, YELLOW, BLACK, BLUE],
+            vec![1,8, BLUE, BLACK, YELLOW, BLACK, BLUE, BLACK, YELLOW, BLACK],
+            vec![8,1, BLACK, YELLOW, BLACK, BLUE, BLACK, YELLOW, BLACK, BLUE],
+            vec![8,1, BLUE, BLACK, YELLOW, BLACK, BLUE, BLACK, YELLOW, BLACK],
+        ];
+    };
+
+    let pieces: Vec<Piece2> = vec![mono_1, mono_2, domi, trom_1, trom_2, trom_3, trom_4, tetr_1, tetr_2, tetr_3, tetr_4, tetr_5, tetr_6, tetr_7, tetr_8, tetr_9, tetr_10, oct_1];
+    return pieces;
+}
 
 // makes vector of all the pieces
 // first three vals are dimensions of piece, then colors
@@ -74,7 +266,8 @@ pub fn load_pieces() -> Vec<Piece> {
     return pieces;
 }
 
-fn is_placeable(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) -> bool {
+// TODO: need to only check if non-empty squares are filled
+fn in_bounds(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) -> bool {
 
     let piece = &pieces[turn.piece];
 
@@ -93,23 +286,12 @@ fn is_placeable(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) -> bool {
         return false;
     }
 
-    for i in 0..d1 {
-        for j in 0..d2 {
-            let index = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-            if board[index] == Color.EMPTY {
-                return false;
-            }
-        }
-    }
-
     return true;
 }
 
-// TODO: implement this function
-// assume the piece is in bounds and placeable
 pub fn place_piece(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) {
 
-    if !is_placeable(board, pieces, turn) {
+    if !in_bounds(board, pieces, turn) {
         return;
     }
 
@@ -117,77 +299,199 @@ pub fn place_piece(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) {
     let dims: &[u8] = &piece[..3];
     let piece_colors: &[u8] = &piece[3..];
 
-    let mut d1;
-    let mut d1_flip;
-    let mut d2;
-    let mut d2_flip;
-
-    let mut d3;
-
     match turn.orientation {
         Orientation::Orig => {
             // do nothing
-            d1 = dims[0];
-            d1_flip = false;
-            d2 = dims[1];
-            d2_flip = false;
-            d3 = 0;
+
+            for i in 0..dims[0] {
+                for j in 0..dims[1] {
+                    let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+                    let piece_coord = [i, j, 0];
+                    let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
+                    
+                    // cannot place piece
+                    if piece_colors[piece_idx] != 0 and board[board_idx] != Colors.EMPTY {
+                        return;
+                    }
+                }
+            }
+
+            for i in 0..dims[0] {
+                for j in 0..dims[1] {
+                    let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+                    let piece_coord = [i, j, 0];
+                    let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
+                    board[board_idx] = piece_colors[piece_idx]
+                }
+            }
         },
         Orientation::Rot90 => {
             // rotate 90 degrees
-            d1 = dims[1];
-            d1_flip = true;
-            d2 = dims[0];
-            d2_flip = false;
-            d3 = 0;
+            for i in 0..dims[1] {
+                for j in 0..dims[0] {
+                    let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+                    let piece_coord = [j, dims[1]-i-1, 0];
+                    let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
+                    
+                    // cannot place piece
+                    if piece_colors[piece_idx] != 0 and board[board_idx] != Colors.EMPTY {
+                        return;
+                    }
+                }
+            }
+
+            for i in 0..dims[1] {
+                for j in 0..dims[0] {
+                    let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+                    let piece_coord = [j, dims[1]-i-1, 0];
+                    let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
+                    board[board_idx] = piece_colors[piece_idx]
+                }
+            }
         },
         Orientation::Rot180 => {
             // rotate 180 degrees
-            d1 = dims[0];
-            d1_flip = true;
-            d2 = dims[1];
-            d2_flip = true;
-            d3 = 0;
+            for i in 0..dims[0] {
+                for j in 0..dims[1] {
+                    let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+                    let piece_coord = [dims[0]-i-1, dims[0]-j-1, 0];
+                    let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
+                    
+                    // cannot place piece
+                    if piece_colors[piece_idx] != 0 and board[board_idx] != Colors.EMPTY {
+                        return;
+                    }
+                }
+            }
+
+            for i in 0..dims[0] {
+                for j in 0..dims[1] {
+                    let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+                    let piece_coord = [dims[0]-i-1, dims[0]-j-1, 0];
+                    let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
+                    board[board_idx] = piece_colors[piece_idx]
+                }
+            }
         },
         Orientation::Rot270 => {
             // rotate 270 degrees
-            d1 = dims[1];
-            d1_flip = false;
-            d2 = dims[0];
-            d2_flip = true;
-            d3 = 0;
+            for i in 0..dims[1] {
+                for j in 0..dims[0] {
+                    let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+                    let piece_coord = [i, j, 0];
+                    let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
+                    
+                    // cannot place piece
+                    if piece_colors[piece_idx] != 0 and board[board_idx] != Colors.EMPTY {
+                        return;
+                    }
+                }
+            }
+
+            for i in 0..dims[0] {
+                for j in 0..dims[1] {
+                    let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+                    let piece_coord = [i, j, 0];
+                    let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
+                    board[board_idx] = piece_colors[piece_idx]
+                }
+            }
         },
         Orientation::Flip => {
             // flip vertically
-            d1 = dims[0];
-            d1_flip = false;
-            d2 = dims[1];
-            d2_flip = true;
-            d3 = 1;
+            for i in 0..dims[0] {
+                for j in 0..dims[1] {
+                    let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+                    let piece_coord = [i, j, 0];
+                    let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
+                    
+                    // cannot place piece
+                    if piece_colors[piece_idx] != 0 and board[board_idx] != Colors.EMPTY {
+                        return;
+                    }
+                }
+            }
+
+            for i in 0..dims[0] {
+                for j in 0..dims[1] {
+                    let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+                    let piece_coord = [i, j, 0];
+                    let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
+                    board[board_idx] = piece_colors[piece_idx]
+                }
+            }
         },
         Orientation::Rot90Flip => {
             // rotate 90 degrees, then flip vertically
-            d1 = dims[1];
-            d1_flip = true;
-            d2 = dims[0];
-            d2_flip = true;
-            d3 = 1;
+            for i in 0..dims[0] {
+                for j in 0..dims[1] {
+                    let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+                    let piece_coord = [i, j, 0];
+                    let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
+                    
+                    // cannot place piece
+                    if piece_colors[piece_idx] != 0 and board[board_idx] != Colors.EMPTY {
+                        return;
+                    }
+                }
+            }
+
+            for i in 0..dims[0] {
+                for j in 0..dims[1] {
+                    let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+                    let piece_coord = [i, j, 0];
+                    let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
+                    board[board_idx] = piece_colors[piece_idx]
+                }
+            }
         },
         Orientation::Rot180Flip => {
             // rotate 180 degrees, then flip vertically
-            d1 = dims[0];
-            d1_flip = true;
-            d2 = dims[1];
-            d2_flip = false;
-            d3 = 1;
+            for i in 0..dims[0] {
+                for j in 0..dims[1] {
+                    let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+                    let piece_coord = [i, j, 0];
+                    let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
+                    
+                    // cannot place piece
+                    if piece_colors[piece_idx] != 0 and board[board_idx] != Colors.EMPTY {
+                        return;
+                    }
+                }
+            }
+
+            for i in 0..dims[0] {
+                for j in 0..dims[1] {
+                    let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+                    let piece_coord = [i, j, 0];
+                    let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
+                    board[board_idx] = piece_colors[piece_idx]
+                }
+            }
         },
         Orientation::Rot270Flip => {
             // rotate 270 degrees, then flip vertically
-            d1 = dims[1];
-            d1_flip = false;
-            d2 = dims[0];
-            d2_flip = false;
-            d3 = 1;
+            for i in 0..dims[0] {
+                for j in 0..dims[1] {
+                    let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+                    let piece_coord = [i, j, 0];
+                    let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
+                    
+                    // cannot place piece
+                    if piece_colors[piece_idx] != 0 and board[board_idx] != Colors.EMPTY {
+                        return;
+                    }
+                }
+            }
+
+            for i in 0..dims[0] {
+                for j in 0..dims[1] {
+                    let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+                    let piece_coord = [i, j, 0];
+                    let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
+                    board[board_idx] = piece_colors[piece_idx]
+                }
+            }
         },
     }
 
