@@ -26,7 +26,7 @@ pub enum Orientation {
 pub struct Move {
     pub piece: usize,               // index of piece in pieces vector
     pub row: usize,                 // x coord of top left corner
-    pub col: usize,                 // y coord of top left corner
+    pub col: usize,                 // YELLOW coord of top left corner
     pub orientation: Orientation    // orientation of piece
 }
 
@@ -151,26 +151,42 @@ fn load_pieces_2() -> Vec<Piece2> {
     let tetr_3 = Piece2{
         idx: 10,
         configs: vec![
-            vec![2,3, EMPTY, EMPTY, BLACK, RED, BLACK, RED],
-            vec![3,2, EMPTY, RED, EMPTY, BLACK, BLACK, RED],
-            vec![2,3, RED, BLACK, RED, BLACK, EMPTY, EMPTY],
-            vec![3,2, RED, EMPTY, BLACK, EMPTY, RED, BLACK],
-            // todo: add more
+            vec![2,3, EMPTY, EMPTY, RED, BLACK, RED, BLACK],
+            vec![3,2, RED, BLACK, EMPTY, RED, EMPTY, BLACK],
+            vec![2,3, BLACK, RED, BLACK, RED, EMPTY, EMPTY],
+            vec![3,2, BLACK, EMPTY, RED, EMPTY, BLACK, RED],
+            vec![2,3, BLACK, EMPTY, EMPTY, YELLOW, BLACK, BLUE],
+            vec![3,2, YELLOW, BLACK, BLACK, EMPTY, BLUE, EMPTY],
+            vec![2,3, BLUE, BLACK, YELLOW, EMPTY, EMPTY, BLACK],
+            vec![3,2, EMPTY, BLUE, EMPTY, BLACK, BLACK, YELLOW],
         ];
     };
 
-    // todo: add more *****************************************************
     let tetr_4 = Piece2{
         idx: 11,
         configs: vec![
-            vec![2,3, ],
+            vec![2,3, RED, EMPTY, EMPTY, BLACK, RED, BLACK],
+            vec![3,2, BLACK, RED, RED, EMPTY, BLACK, EMPTY],
+            vec![2,3, BLACK, RED, BLACK, EMPTY, EMPTY, RED],
+            vec![3,2, EMPTY, BLACK, EMPTY, RED, RED, BLACK],
+            vec![2,3, EMPTY, EMPTY, YELLOW, BLACK, BLUE, BLACK],
+            vec![3,2, YELLOW, BLACK, EMPTY, BLUE, EMPTY, BLACK],
+            vec![2,3, BLACK, BLUE, BLACK, YELLOW, EMPTY, EMPTY],
+            vec![3,2, BLACK, EMPTY, BLUE, EMPTY, BLACK, YELLOW],
         ];
     };
 
     let tetr_5 = Piece2{
         idx: 12,
         configs: vec![
-            vec![2,3, ],
+            vec![2,3, EMPTY, EMPTY, BLACK, RED, BLACK, RED],
+            vec![3,2, BLACK, RED, EMPTY, BLACK, EMPTY, RED],
+            vec![2,3, RED, BLACK, RED, BLACK, EMPTY, EMPTY],
+            vec![3,2, RED, EMPTY, BLACK, EMPTY, RED, BLACK],
+            vec![2,3, BLACK, EMPTY, EMPTY, BLUE, BLACK, YELLOW],
+            vec![3,2, BLUE, BLACK, BLACK, EMPTY, YELLOW, EMPTY],
+            vec![2,3, YELLOW, BLACK, BLUE, EMPTY, EMPTY, BLACK],
+            vec![3,2, EMPTY, YELLOW, EMPTY, BLACK, BLACK, BLUE],
         ];
     };
 
@@ -178,39 +194,72 @@ fn load_pieces_2() -> Vec<Piece2> {
     let tetr_6 = Piece2{
         idx: 13,
         configs: vec![
-            vec![2,3, ],
+            vec![2,3, BLACK, EMPTY, EMPTY, RED, BLACK, RED],
+            vec![3,2, RED, BLACK, BLACK, EMPTY, RED, EMPTY],
+            vec![2,3, RED, BLACK, RED, EMPTY, EMPTY, BLACK],
+            vec![3,2, EMPTY, RED, EMPTY, BLACK, BLACK, RED],
+            vec![2,3, EMPTY, EMPTY, BLUE, BLACK, YELLOW, BLACK],
+            vec![3,2, BLUE, BLACK, EMPTY, YELLOW, EMPTY, BLACK],
+            vec![2,3, BLACK, YELLOW, BLACK, BLUE, EMPTY, EMPTY],
+            vec![3,2, BLACK, EMPTY, YELLOW, EMPTY, BLACK, BLUE],
         ];
     };
 
     let tetr_7 = Piece2{
         idx: 14,
         configs: vec![
-            vec![2,3, ],
+            vec![2,3, EMPTY, BLACK, EMPTY, BLACK, RED, BLACK],
+            vec![3,2, BLACK, EMPTY, RED, BLACK, BLACK, EMPTY],
+            vec![2,3, BLACK, RED, BLACK, EMPTY, BLACK, EMPTY],
+            vec![3,2, EMPTY, BLACK, BLACK, RED, EMPTY, BLACK],
+            vec![2,3, EMPTY, YELLOW, EMPTY, BLUE, BLACK, YELLOW],
+            vec![3,2, BLUE, EMPTY, BLACK, YELLOW, YELLOW, EMPTY],
+            vec![2,3, YELLOW, BLACK, BLUE, EMPTY, YELLOW, EMPTY],
+            vec![3,2, EMPTY, YELLOW, YELLOW, BLACK, EMPTY, BLUE],
         ];
     };
 
     let tetr_8 = Piece2{
         idx: 15,
         configs: vec![
-            vec![2,3, ],
+            vec![2,3, EMPTY, RED, EMPTY, RED, BLACK, RED],
+            vec![3,2, RED, EMPTY, BLACK, RED, RED, EMPTY],
+            vec![2,3, RED, BLACK, RED, EMPTY, RED, EMPTY],
+            vec![3,2, EMPTY, RED, RED, BLACK, EMPTY, RED],
+            vec![2,3, EMPTY, BLACK, EMPTY, BLACK, BLUE, BLACK],
+            vec![3,2, BLACK, EMPTY, BLUE, BLACK, BLACK, EMPTY],
+            vec![2,3, BLACK, BLUE, BLACK, EMPTY, BLACK, EMPTY],
+            vec![3,2, EMPTY, BLACK, BLACK, BLUE, EMPTY, BLACK],
         ];
     };
 
     let tetr_9 = Piece2{
         idx: 16,
         configs: vec![
-            vec![2,3, ],
+            vec![2,3, EMPTY, BLACK, RED, BLACK, RED, EMPTY],
+            vec![3,2, RED, EMPTY, BLACK, RED,EMPTY,BLACK],
+            vec![2,3, EMPTY,RED,BLACK,RED,BLACK,EMPTY],
+            vec![3,2, BLACK,EMPTY,RED,BLACK,EMPTY,RED],
+            vec![2,3, BLACK,BLUE,EMPTY,EMPTY,BLACK,YELLOW],
+            vec![3,2, EMPTY,BLACK,BLACK,BLUE,YELLOW,EMPTY],
+            vec![2,3, YELLOW,BLACK,EMPTY,EMPTY,BLUE,BLACK],
+            vec![3,2, EMPTY,YELLOW,BLUE,BLACK,BLACK,EMPTY],
         ];
     };
 
     let tetr_10 = Piece2{
         idx: 17,
         configs: vec![
-            vec![2,3, ],
+            vec![2,3, BLACK,RED,EMPTY,EMPTY,BLACK,RED],
+            vec![3,2, EMPTY,BLACK,BLACK,RED,RED,EMPTY],
+            vec![2,3, RED,BLACK,EMPTY,EMPTY,RED,BLACK],
+            vec![3,2, EMPTY,RED,RED,BLACK,BLACK,EMPTY],
+            vec![2,3, EMPTY,YELLOW,BLACK,BLUE,BLACK,EMPTY],
+            vec![3,2, BLUE,EMPTY,BLACK,YELLOW,EMPTY,BLACK],
+            vec![2,3, EMPTY,BLACK,BLUE,BLACK,YELLOW,EMPTY],
+            vec![3,2, BLACK,EMPTY,YELLOW,BLACK,EMPTY,BLUE],
         ];
     };
-
-    // todo: add more *****************************************************
 
     let oct_1 = Piece2{
         idx: 18,
