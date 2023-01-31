@@ -74,9 +74,44 @@ pub fn load_pieces() -> Vec<Piece> {
     return pieces;
 }
 
+fn is_placeable(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) -> bool {
+
+    let piece = &pieces[turn.piece];
+
+    let mut d1 = piece[0];
+    let mut d2 = piece[1];
+    
+    if (turn.orientation == Orientation::Rot90 || 
+        turn.orientation == Orientation::Rot270 ||
+        turn.orientation == Orientation::Rot90Flip ||
+        turn.orientation == Orientation::Rot270Flip) {
+        d1 = piece[1];
+        d2 = piece[0];
+    }
+
+    if (turn.row + d1 as usize > BOARD_SIZE || turn.col + d2 as usize > BOARD_SIZE) {
+        return false;
+    }
+
+    for i in 0..d1 {
+        for j in 0..d2 {
+            let index = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+            if board[index] == Color.EMPTY {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 // TODO: implement this function
 // assume the piece is in bounds and placeable
 pub fn place_piece(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) {
+
+    if !is_placeable(board, pieces, turn) {
+        return;
+    }
 
     let piece = &pieces[turn.piece];
     let dims: &[u8] = &piece[..3];
