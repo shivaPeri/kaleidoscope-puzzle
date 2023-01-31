@@ -25,8 +25,8 @@ pub enum Orientation {
 
 pub struct Move {
     pub piece: usize,               // index of piece in pieces vector
-    pub x: usize,                   // x coord of top left corner
-    pub y: usize,                   // y coord of top left corner
+    pub row: usize,                 // x coord of top left corner
+    pub col: usize,                 // y coord of top left corner
     pub orientation: Orientation    // orientation of piece
 }
 
@@ -76,46 +76,106 @@ pub fn load_pieces() -> Vec<Piece> {
 
 // TODO: implement this function
 // assume the piece is in bounds and placeable
-pub fn place_piece(board: &Board, pieces: &Vec<Piece>, turn: &Move) -> Board {
+pub fn place_piece(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) {
 
     let piece = &pieces[turn.piece];
     let dims: &[u8] = &piece[..3];
     let piece_colors: &[u8] = &piece[3..];
 
+    let mut d1;
+    let mut d1_flip;
+    let mut d2;
+    let mut d2_flip;
+
+    let mut d3;
+
     match turn.orientation {
         Orientation::Orig => {
             // do nothing
-            for i in 0..dims[0] {
-                for j in 0..dims[1] {
-                    let color = piece_colors[(i * dims[1] + j) as usize];
-                    let board_index = (turn.x + i) * BOARD_SIZE + (turn.y + j);
-                    board[board_index] = color;
-                }
-            }
+            d1 = dims[0];
+            d1_flip = false;
+            d2 = dims[1];
+            d2_flip = false;
+            d3 = 0;
         },
         Orientation::Rot90 => {
             // rotate 90 degrees
+            d1 = dims[1];
+            d1_flip = true;
+            d2 = dims[0];
+            d2_flip = false;
+            d3 = 0;
         },
         Orientation::Rot180 => {
             // rotate 180 degrees
+            d1 = dims[0];
+            d1_flip = true;
+            d2 = dims[1];
+            d2_flip = true;
+            d3 = 0;
         },
         Orientation::Rot270 => {
             // rotate 270 degrees
+            d1 = dims[1];
+            d1_flip = false;
+            d2 = dims[0];
+            d2_flip = true;
+            d3 = 0;
         },
         Orientation::Flip => {
             // flip vertically
+            d1 = dims[0];
+            d1_flip = false;
+            d2 = dims[1];
+            d2_flip = true;
+            d3 = 1;
         },
         Orientation::Rot90Flip => {
             // rotate 90 degrees, then flip vertically
+            d1 = dims[1];
+            d1_flip = true;
+            d2 = dims[0];
+            d2_flip = true;
+            d3 = 1;
         },
         Orientation::Rot180Flip => {
             // rotate 180 degrees, then flip vertically
+            d1 = dims[0];
+            d1_flip = true;
+            d2 = dims[1];
+            d2_flip = false;
+            d3 = 1;
         },
         Orientation::Rot270Flip => {
             // rotate 270 degrees, then flip vertically
+            d1 = dims[1];
+            d1_flip = false;
+            d2 = dims[0];
+            d2_flip = false;
+            d3 = 1;
         },
     }
 
+    // this is the actual piece placement
+    // TODO: double check this
+    for i in 0..d1 {
+        for j in 0..d2 {
+            let mut index = turn.row * BOARD_SIZE + turn.col;
+            if d1_flip {
+                index += (d1 - i - 1) * BOARD_SIZE;
+            } else {
+                index += i * BOARD_SIZE;
+            }
+            if d2_flip {
+                index += d2 - j - 1;
+            } else {
+                index += j;
+            }
+
+            let piece_idx = i * d2 + j + d3;
+            board[index] = piece_colors[piece_idx as usize];
+        }
+    }
 }
 
 // function to read and parse json given local file path
