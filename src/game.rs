@@ -12,22 +12,11 @@ pub enum Color {
     BLUE = 4
 }
 
-pub enum Orientation {
-    Orig,
-    Rot90,
-    Rot180,
-    Rot270,
-    Flip,
-    Rot90Flip,
-    Rot180Flip,
-    Rot270Flip
-}
-
 pub struct Move {
-    pub piece: usize,               // index of piece in pieces vector
-    pub row: usize,                 // x coord of top left corner
-    pub col: usize,                 // y coord of top left corner
-    pub orientation: Orientation    // orientation of piece
+    piece: usize,               // index of piece in pieces vector
+    config: usize,              // index of config in piece vector
+    row: usize,                 // row of top left corner
+    col: usize,                 // col of top left corner
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -280,256 +269,58 @@ pub fn load_pieces() -> Vec<Piece2> {
     return pieces;
 }
 
-// // TODO: need to only check if non-0 squares are filled
-// fn in_bounds(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) -> bool {
+// TODO: need to only check if non-0 squares are filled
+fn in_bounds(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) -> bool {
 
-//     let piece = &pieces[turn.piece];
+    let piece = &pieces[turn.piece].configs[turn.config];
 
-//     let mut d1 = piece[0];
-//     let mut d2 = piece[1];
+    let mut d1 = piece[0];
+    let mut d2 = piece[1];
     
-//     if (turn.orientation == Orientation::Rot90 || 
-//         turn.orientation == Orientation::Rot270 ||
-//         turn.orientation == Orientation::Rot90Flip ||
-//         turn.orientation == Orientation::Rot270Flip) {
-//         d1 = piece[1];
-//         d2 = piece[0];
-//     }
+    if (turn.row + d1 as usize > BOARD_SIZE || turn.col + d2 as usize > BOARD_SIZE) {
+        return false;
+    }
 
-//     if (turn.row + d1 as usize > BOARD_SIZE || turn.col + d2 as usize > BOARD_SIZE) {
-//         return false;
-//     }
+    // TODO: review this later
+    for i in 0..d1 {
+        for j in 0..d2 {
+            let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+            let piece_coord = [i, j, 0];
+            let piece_idx = piece_coord[0] * d1 as usize + piece_coord[1] * d2 as usize + piece_coord[2] * 1;
+            let piece_color = piece[2 + piece_idx];
 
-//     return true;
-// }
+            if piece_color != 0 && board[board_idx] != 0 {
+                return false;
+            }
+        }
+    }
 
-// pub fn place_piece(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) {
+    return true;
+}
 
-//     if !in_bounds(board, pieces, turn) {
-//         return;
-//     }
+pub fn place_piece(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) {
 
-//     let piece = &pieces[turn.piece];
-//     let dims: &[u8] = &piece[..3];
-//     let piece_colors: &[u8] = &piece[3..];
+    if !in_bounds(board, pieces, turn) { return; }
 
-//     match turn.orientation {
-//         Orientation::Orig => {
-//             // do nothing
+    let piece = &pieces[turn.piece].configs[turn.config];
+    let dims: &[u8] = &piece[..2];
+    let piece_colors: &[u8] = &piece[2..];
 
-//             for i in 0..dims[0] {
-//                 for j in 0..dims[1] {
-//                     let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-//                     let piece_coord = [i, j, 0];
-//                     let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
-                    
-//                     // cannot place piece
-//                     if piece_colors[piece_idx] != 0 and board[board_idx] != Colors.0 {
-//                         return;
-//                     }
-//                 }
-//             }
+    // TODO: review this later
+    for i in 0..dims[0] {
+        for j in 0..dims[1] {
+            let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+            let piece_coord = [i, j, 0];
+            let piece_idx = piece_coord[0] * dims[0] as usize + piece_coord[1] * dims[1] as usize + piece_coord[2] * 1;
+            let piece_color = piece_colors[piece_idx];
 
-//             for i in 0..dims[0] {
-//                 for j in 0..dims[1] {
-//                     let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-//                     let piece_coord = [i, j, 0];
-//                     let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
-//                     board[board_idx] = piece_colors[piece_idx]
-//                 }
-//             }
-//         },
-//         Orientation::Rot90 => {
-//             // rotate 90 degrees
-//             for i in 0..dims[1] {
-//                 for j in 0..dims[0] {
-//                     let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-//                     let piece_coord = [j, dims[1]-i-1, 0];
-//                     let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
-                    
-//                     // cannot place piece
-//                     if piece_colors[piece_idx] != 0 and board[board_idx] != Colors.0 {
-//                         return;
-//                     }
-//                 }
-//             }
+            if piece_color != 0 {
+                board[board_idx] = piece_color;
+            }
+        }
+    }
 
-//             for i in 0..dims[1] {
-//                 for j in 0..dims[0] {
-//                     let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-//                     let piece_coord = [j, dims[1]-i-1, 0];
-//                     let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
-//                     board[board_idx] = piece_colors[piece_idx]
-//                 }
-//             }
-//         },
-//         Orientation::Rot180 => {
-//             // rotate 180 degrees
-//             for i in 0..dims[0] {
-//                 for j in 0..dims[1] {
-//                     let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-//                     let piece_coord = [dims[0]-i-1, dims[0]-j-1, 0];
-//                     let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
-                    
-//                     // cannot place piece
-//                     if piece_colors[piece_idx] != 0 and board[board_idx] != Colors.0 {
-//                         return;
-//                     }
-//                 }
-//             }
-
-//             for i in 0..dims[0] {
-//                 for j in 0..dims[1] {
-//                     let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-//                     let piece_coord = [dims[0]-i-1, dims[0]-j-1, 0];
-//                     let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
-//                     board[board_idx] = piece_colors[piece_idx]
-//                 }
-//             }
-//         },
-//         Orientation::Rot270 => {
-//             // rotate 270 degrees
-//             for i in 0..dims[1] {
-//                 for j in 0..dims[0] {
-//                     let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-//                     let piece_coord = [i, j, 0];
-//                     let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
-                    
-//                     // cannot place piece
-//                     if piece_colors[piece_idx] != 0 and board[board_idx] != Colors.0 {
-//                         return;
-//                     }
-//                 }
-//             }
-
-//             for i in 0..dims[0] {
-//                 for j in 0..dims[1] {
-//                     let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-//                     let piece_coord = [i, j, 0];
-//                     let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
-//                     board[board_idx] = piece_colors[piece_idx]
-//                 }
-//             }
-//         },
-//         Orientation::Flip => {
-//             // flip vertically
-//             for i in 0..dims[0] {
-//                 for j in 0..dims[1] {
-//                     let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-//                     let piece_coord = [i, j, 0];
-//                     let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
-                    
-//                     // cannot place piece
-//                     if piece_colors[piece_idx] != 0 and board[board_idx] != Colors.0 {
-//                         return;
-//                     }
-//                 }
-//             }
-
-//             for i in 0..dims[0] {
-//                 for j in 0..dims[1] {
-//                     let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-//                     let piece_coord = [i, j, 0];
-//                     let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
-//                     board[board_idx] = piece_colors[piece_idx]
-//                 }
-//             }
-//         },
-//         Orientation::Rot90Flip => {
-//             // rotate 90 degrees, then flip vertically
-//             for i in 0..dims[0] {
-//                 for j in 0..dims[1] {
-//                     let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-//                     let piece_coord = [i, j, 0];
-//                     let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
-                    
-//                     // cannot place piece
-//                     if piece_colors[piece_idx] != 0 and board[board_idx] != Colors.0 {
-//                         return;
-//                     }
-//                 }
-//             }
-
-//             for i in 0..dims[0] {
-//                 for j in 0..dims[1] {
-//                     let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-//                     let piece_coord = [i, j, 0];
-//                     let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
-//                     board[board_idx] = piece_colors[piece_idx]
-//                 }
-//             }
-//         },
-//         Orientation::Rot180Flip => {
-//             // rotate 180 degrees, then flip vertically
-//             for i in 0..dims[0] {
-//                 for j in 0..dims[1] {
-//                     let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-//                     let piece_coord = [i, j, 0];
-//                     let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
-                    
-//                     // cannot place piece
-//                     if piece_colors[piece_idx] != 0 and board[board_idx] != Colors.0 {
-//                         return;
-//                     }
-//                 }
-//             }
-
-//             for i in 0..dims[0] {
-//                 for j in 0..dims[1] {
-//                     let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-//                     let piece_coord = [i, j, 0];
-//                     let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
-//                     board[board_idx] = piece_colors[piece_idx]
-//                 }
-//             }
-//         },
-//         Orientation::Rot270Flip => {
-//             // rotate 270 degrees, then flip vertically
-//             for i in 0..dims[0] {
-//                 for j in 0..dims[1] {
-//                     let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-//                     let piece_coord = [i, j, 0];
-//                     let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
-                    
-//                     // cannot place piece
-//                     if piece_colors[piece_idx] != 0 and board[board_idx] != Colors.0 {
-//                         return;
-//                     }
-//                 }
-//             }
-
-//             for i in 0..dims[0] {
-//                 for j in 0..dims[1] {
-//                     let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-//                     let piece_coord = [i, j, 0];
-//                     let piece_idx = piece_coord[0] * dims[1] as usize + piece_coord[1] * dims[2] as usize + piece_coord[2] as usize;
-//                     board[board_idx] = piece_colors[piece_idx]
-//                 }
-//             }
-//         },
-//     }
-
-//     // this is the actual piece placement
-//     // TODO: double check this
-//     for i in 0..d1 {
-//         for j in 0..d2 {
-//             let mut index = turn.row * BOARD_SIZE + turn.col;
-//             if d1_flip {
-//                 index += (d1 - i - 1) * BOARD_SIZE;
-//             } else {
-//                 index += i * BOARD_SIZE;
-//             }
-//             if d2_flip {
-//                 index += d2 - j - 1;
-//             } else {
-//                 index += j;
-//             }
-
-//             let piece_idx = i * d2 + j + d3;
-//             board[index] = piece_colors[piece_idx as usize];
-//         }
-//     }
-// }
+}
 
 // function to read and parse json given local file path
 // returns a flat vector of colors representing the board
