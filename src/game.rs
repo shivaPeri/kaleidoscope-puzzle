@@ -23,6 +23,13 @@ pub enum Orientation {
     Rot270Flip
 }
 
+pub struct Move {
+    pub piece: usize,               // index of piece in pieces vector
+    pub x: usize,                   // x coord of top left corner
+    pub y: usize,                   // y coord of top left corner
+    pub orientation: Orientation    // orientation of piece
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 struct Data(HashMap<String, String>);
 
@@ -68,59 +75,45 @@ pub fn load_pieces() -> Vec<Piece> {
 }
 
 // TODO: implement this function
-pub fn place_piece(piece: &Piece, orientation: Orientation) {
+// assume the piece is in bounds and placeable
+pub fn place_piece(board: &Board, pieces: &Vec<Piece>, turn: &Move) -> Board {
 
+    let piece = &pieces[turn.piece];
     let dims: &[u8] = &piece[..3];
     let piece_colors: &[u8] = &piece[3..];
 
-    let mut d1: usize = 0;
-    let mut d2: usize = 1;
-    let d1_dir: usize;
-    let d2_dir: usize;
-    let d3: u8;
-
-    match orientation {
+    match turn.orientation {
         Orientation::Orig => {
             // do nothing
-            d1 = 0;
-            d2 = 1;
-            d3 = 0;
+            for i in 0..dims[0] {
+                for j in 0..dims[1] {
+                    let color = piece_colors[(i * dims[1] + j) as usize];
+                    let board_index = (turn.x + i) * BOARD_SIZE + (turn.y + j);
+                    board[board_index] = color;
+                }
+            }
         },
         Orientation::Rot90 => {
             // rotate 90 degrees
-            d3 = 0;
         },
         Orientation::Rot180 => {
             // rotate 180 degrees
-            d3 = 0;
         },
         Orientation::Rot270 => {
             // rotate 270 degrees
-            d3 = 0;
         },
         Orientation::Flip => {
             // flip vertically
-            d3 = 1;
         },
         Orientation::Rot90Flip => {
             // rotate 90 degrees, then flip vertically
-            d3 = 1;
         },
         Orientation::Rot180Flip => {
             // rotate 180 degrees, then flip vertically
-            d3 = 1;
         },
         Orientation::Rot270Flip => {
             // rotate 270 degrees, then flip vertically
-            d3 = 1;
         },
-    }
-
-    for i in 0..dims[d1] {
-        for j in 0..dims[d2] {
-            let color = piece_colors[(i*dims[1]*dims[2] + j*dims[2] + d3) as usize];
-            println!("color: {}", color);
-        }
     }
 
 }
