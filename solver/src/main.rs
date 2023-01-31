@@ -13,14 +13,14 @@ enum Color {
 }
 
 enum Orientation {
-    ORIG,
-    ROT90,
-    ROT180,
-    ROT270,
-    FLIP,
-    FLIP_ROT90,
-    FLIP_ROT180,
-    FLIP_ROT270
+    Orig,
+    Rot90,
+    Rot180,
+    Rot270,
+    Flip,
+    Rot90Flip,
+    Rot180Flip,
+    Rot270Flip
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -31,22 +31,23 @@ type Piece = Vec<u8>;
 
 const BOARD_SIZE: usize = 8;
 
-fn make_pieces() -> Vec<Piece> {
+// makes vector of all the pieces
+// first three vals are dimensions of piece, then colors
+fn load_pieces() -> Vec<Piece> {
     
-    // first three vals are dimensions of piece, then colors
-
     // Monominoes
     let mono_1: Vec<u8> = vec![1,1,2, 2,1];
     let mono_2: Vec<u8> = vec![1,1,2, 1,4];
-
+    
     // Dominoes
     let domi: Vec<u8> = vec![1,2,2, 2,1,1,4];
-
+    
+    // Trominoes
     let trom_1: Vec<u8> = vec![1,3,2, 2,3,1,1,2,4];
     let trom_2: Vec<u8> = vec![1,3,2, 1,1,2,3,1,1];
     let trom_3: Vec<u8> = vec![2,2,2, 2,4,0,0,1,1,2,3];
     let trom_4: Vec<u8> = vec![2,2,2, 1,1,0,0,2,3,1,1];
-
+    
     // Tetrominoes
     let tetr_1: Vec<u8> = vec![1,4,2, 2,4,1,1,2,3,1,1];
     let tetr_2: Vec<u8> = vec![2,2,2, 2,1,1,4,1,3,2,1];
@@ -58,51 +59,74 @@ fn make_pieces() -> Vec<Piece> {
     let tetr_8: Vec<u8> = vec![2,3,2, 2,3,0,0,0,0,1,1,2,4,1,1];
     let tetr_9: Vec<u8> = vec![2,3,2, 0,0,0,0,1,1,2,3,1,1,2,4];
     let tetr_10: Vec<u8> = vec![2,3,2, 0,0,0,0,2,1,1,4,2,1,1,3];
-
+    
     // Octominoes
     let oct_1: Vec<u8> = vec![1,8,2, 2,1,1,3,2,1,1,4,2,1,1,3,2,1,1,4];
-
-    let pieces = vec![mono_1, mono_2, domi, trom_1, trom_2, trom_3, trom_4, tetr_1, tetr_2, tetr_3, tetr_4, tetr_5, tetr_6, tetr_7, tetr_8, tetr_9, tetr_10, oct_1];
+    
+    let pieces: Vec<Piece> = vec![mono_1, mono_2, domi, trom_1, trom_2, trom_3, trom_4, tetr_1, tetr_2, tetr_3, tetr_4, tetr_5, tetr_6, tetr_7, tetr_8, tetr_9, tetr_10, oct_1];
     return pieces;
 }
 
+// TODO: implement this function
 fn place_piece(piece: &Piece, orientation: Orientation) {
-    // TODO
 
-    let dim_1 = piece[0];
-    let dim_2 = piece[1];
-    let dim_3 = piece[2];
+    let dims: &[u8] = &piece[..3];
+    let piece_colors: &[u8] = &piece[3..];
+
+    let mut d1: usize = 0;
+    let mut d2: usize = 1;
+    let d1_dir: usize;
+    let d2_dir: usize;
+    let d3: u8;
 
     match orientation {
-        Orientation::ORIG => {
+        Orientation::Orig => {
             // do nothing
+            d1 = 0;
+            d2 = 1;
+            d3 = 0;
         },
-        Orientation::ROT90 => {
+        Orientation::Rot90 => {
             // rotate 90 degrees
+            d3 = 0;
         },
-        Orientation::ROT180 => {
+        Orientation::Rot180 => {
             // rotate 180 degrees
+            d3 = 0;
         },
-        Orientation::ROT270 => {
+        Orientation::Rot270 => {
             // rotate 270 degrees
+            d3 = 0;
         },
-        Orientation::FLIP => {
-            // flip horizontally
+        Orientation::Flip => {
+            // flip vertically
+            d3 = 1;
         },
-        Orientation::FLIP_ROT90 => {
-            // flip horizontally, then rotate 90 degrees
+        Orientation::Rot90Flip => {
+            // rotate 90 degrees, then flip vertically
+            d3 = 1;
         },
-        Orientation::FLIP_ROT180 => {
-            // flip horizontally, then rotate 180 degrees
+        Orientation::Rot180Flip => {
+            // rotate 180 degrees, then flip vertically
+            d3 = 1;
         },
-        Orientation::FLIP_ROT270 => {
-            // flip horizontally, then rotate 270 degrees
+        Orientation::Rot270Flip => {
+            // rotate 270 degrees, then flip vertically
+            d3 = 1;
         },
+    }
+
+    for i in 0..dims[d1] {
+        for j in 0..dims[d2] {
+            let color = piece_colors[(i*dims[1]*dims[2] + j*dims[2] + d3) as usize];
+            println!("color: {}", color);
+        }
     }
 
 }
 
 // function to read and parse json given local file path
+// returns a flat vector of colors representing the board
 fn load_game(path: &Path, game: &str) -> Board {
     let file = fs::read_to_string(path).expect("Unable to read file");
     let data: Data = serde_json::from_str(&file).expect("Unable to parse json");
@@ -127,7 +151,7 @@ fn load_game(path: &Path, game: &str) -> Board {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let board = load_game(Path::new("../boards/scraped-boards.json"), "australian-emu");
-    let pieces = make_pieces();
+    let pieces = load_pieces();
 
     println!("{:?}", board);
     println!("{:?}", pieces);
