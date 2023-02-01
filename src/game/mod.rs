@@ -1,3 +1,6 @@
+mod solver;
+mod generator;
+
 use std::fs;
 use std::path::Path;
 use std::collections::HashMap;
@@ -22,20 +25,20 @@ pub struct Move {
 #[derive(Serialize, Deserialize, Debug)]
 struct Data(HashMap<String, String>);
 
-pub type Board = Vec<Color>;
-pub type Piece = Vec<u8>;
+pub type Board = Vec<u8>;
+pub type PieceConfig = Vec<u8>;
 
 #[derive(Default, Serialize, Deserialize, Debug)]
-pub struct Piece2 {
+pub struct Piece {
     idx: u8,
-    configs: Vec<Piece>
+    configs: Vec<PieceConfig>
 }
 
-pub const BOARD_SIZE: usize = 8;
+const BOARD_SIZE: usize = 8;
 
-pub fn load_pieces() -> Vec<Piece2> {
+pub fn load_pieces() -> Vec<Piece> {
 
-    let mono_1 = Piece2{
+    let mono_1 = Piece{
         idx: 1,
         configs: vec![
             vec![1,1, 2],
@@ -43,7 +46,7 @@ pub fn load_pieces() -> Vec<Piece2> {
         ],
     };
 
-    let mono_2 = Piece2{
+    let mono_2 = Piece{
         idx: 2,
         configs: vec![
             vec![1,1, 4],
@@ -51,7 +54,7 @@ pub fn load_pieces() -> Vec<Piece2> {
         ],
     };
 
-    let domo_1 = Piece2{
+    let domo_1 = Piece{
         idx: 3,
         configs: vec![
             vec![1,2, 2,1],
@@ -65,7 +68,7 @@ pub fn load_pieces() -> Vec<Piece2> {
         ],
     };
 
-    let trom_1 = Piece2{
+    let trom_1 = Piece{
         idx: 4,
         configs: vec![
             vec![1,3, 2,1,1],
@@ -77,7 +80,7 @@ pub fn load_pieces() -> Vec<Piece2> {
         ],
     };
 
-    let trom_2 = Piece2{
+    let trom_2 = Piece{
         idx: 5,
         configs: vec![
             vec![1,3, 1,2,1],
@@ -87,7 +90,7 @@ pub fn load_pieces() -> Vec<Piece2> {
         ],
     };
 
-    let trom_3 = Piece2{
+    let trom_3 = Piece{
         idx: 6,
         configs: vec![
             vec![2,2, 0,1,2,1],
@@ -102,7 +105,7 @@ pub fn load_pieces() -> Vec<Piece2> {
     };
 
     // this might be wrong
-    let trom_4 = Piece2{
+    let trom_4 = Piece{
         idx: 7,
         configs: vec![
             vec![2,2, 0,2,1,2],
@@ -116,7 +119,7 @@ pub fn load_pieces() -> Vec<Piece2> {
         ],
     };
 
-    let tetr_1 = Piece2{
+    let tetr_1 = Piece{
         idx: 8,
         configs: vec![
             vec![1,4, 2,1,2,1],
@@ -126,7 +129,7 @@ pub fn load_pieces() -> Vec<Piece2> {
         ],
     };
 
-    let tetr_2 = Piece2{
+    let tetr_2 = Piece{
         idx: 9,
         configs: vec![
             vec![2,2, 2,1,2,1],
@@ -138,7 +141,7 @@ pub fn load_pieces() -> Vec<Piece2> {
         ],
     };
 
-    let tetr_3 = Piece2{
+    let tetr_3 = Piece{
         idx: 10,
         configs: vec![
             vec![2,3, 0,0,2,1,2,1],
@@ -152,7 +155,7 @@ pub fn load_pieces() -> Vec<Piece2> {
         ],
     };
 
-    let tetr_4 = Piece2{
+    let tetr_4 = Piece{
         idx: 11,
         configs: vec![
             vec![2,3, 2,0,0,1,2,1],
@@ -166,7 +169,7 @@ pub fn load_pieces() -> Vec<Piece2> {
         ],
     };
 
-    let tetr_5 = Piece2{
+    let tetr_5 = Piece{
         idx: 12,
         configs: vec![
             vec![2,3, 0,0,1,2,1,2],
@@ -181,7 +184,7 @@ pub fn load_pieces() -> Vec<Piece2> {
     };
 
 
-    let tetr_6 = Piece2{
+    let tetr_6 = Piece{
         idx: 13,
         configs: vec![
             vec![2,3, 1,0,0,2,1,2],
@@ -195,7 +198,7 @@ pub fn load_pieces() -> Vec<Piece2> {
         ],
     };
 
-    let tetr_7 = Piece2{
+    let tetr_7 = Piece{
         idx: 14,
         configs: vec![
             vec![2,3, 0,1,0,1,2,1],
@@ -209,7 +212,7 @@ pub fn load_pieces() -> Vec<Piece2> {
         ],
     };
 
-    let tetr_8 = Piece2{
+    let tetr_8 = Piece{
         idx: 15,
         configs: vec![
             vec![2,3, 0,2,0,2,1,2],
@@ -223,7 +226,7 @@ pub fn load_pieces() -> Vec<Piece2> {
         ],
     };
 
-    let tetr_9 = Piece2{
+    let tetr_9 = Piece{
         idx: 16,
         configs: vec![
             vec![2,3, 0,1,2,1,2,0],
@@ -237,7 +240,7 @@ pub fn load_pieces() -> Vec<Piece2> {
         ],
     };
 
-    let tetr_10 = Piece2{
+    let tetr_10 = Piece{
         idx: 17,
         configs: vec![
             vec![2,3, 1,2,0,0,1,2],
@@ -251,7 +254,7 @@ pub fn load_pieces() -> Vec<Piece2> {
         ],
     };
 
-    let oct_1 = Piece2{
+    let oct_1 = Piece{
         idx: 18,
         configs: vec![
             vec![1,8, 1,2,1,2,1,2,1,2],
@@ -265,31 +268,28 @@ pub fn load_pieces() -> Vec<Piece2> {
         ],
     };
 
-    let pieces: Vec<Piece2> = vec![mono_1, mono_2, domo_1, trom_1, trom_2, trom_3, trom_4, tetr_1, tetr_2, tetr_3, tetr_4, tetr_5, tetr_6, tetr_7, tetr_8, tetr_9, tetr_10, oct_1];
+    let pieces: Vec<Piece> = vec![mono_1, mono_2, domo_1, trom_1, trom_2, trom_3, trom_4, tetr_1, tetr_2, tetr_3, tetr_4, tetr_5, tetr_6, tetr_7, tetr_8, tetr_9, tetr_10, oct_1];
     return pieces;
 }
 
-// TODO: need to only check if non-0 squares are filled
-fn in_bounds(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) -> bool {
+
+fn is_placeable(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) -> bool {
 
     let piece = &pieces[turn.piece].configs[turn.config];
-
-    let mut d1 = piece[0];
-    let mut d2 = piece[1];
+    let dims: &[u8] = &piece[..2];
+    let piece_colors: &[u8] = &piece[2..];
     
-    if (turn.row + d1 as usize > BOARD_SIZE || turn.col + d2 as usize > BOARD_SIZE) {
+    if (turn.row + dims[0] as usize > BOARD_SIZE || turn.col + dims[1] as usize > BOARD_SIZE) {
         return false;
     }
 
-    // TODO: review this later
-    for i in 0..d1 {
-        for j in 0..d2 {
-            let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-            let piece_coord = [i, j, 0];
-            let piece_idx = piece_coord[0] * d1 as usize + piece_coord[1] * d2 as usize + piece_coord[2] * 1;
-            let piece_color = piece[2 + piece_idx];
+    for i in 0..dims[0] {
+        for j in 0..dims[1] {
+            let board_idx: usize = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+            let piece_idx: usize = (i * dims[1]) as usize + j as usize;
 
-            if piece_color != 0 && board[board_idx] != 0 {
+            // non-empty piece color and non-empty board color => collision
+            if piece_colors[piece_idx] != 0 && board[board_idx] != 0 {
                 return false;
             }
         }
@@ -300,22 +300,20 @@ fn in_bounds(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) -> bool {
 
 pub fn place_piece(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) {
 
-    if !in_bounds(board, pieces, turn) { return; }
+    if !is_placeable(board, pieces, turn) { return; }
 
     let piece = &pieces[turn.piece].configs[turn.config];
     let dims: &[u8] = &piece[..2];
     let piece_colors: &[u8] = &piece[2..];
 
-    // TODO: review this later
     for i in 0..dims[0] {
         for j in 0..dims[1] {
-            let board_idx = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-            let piece_coord = [i, j, 0];
-            let piece_idx = piece_coord[0] * dims[0] as usize + piece_coord[1] * dims[1] as usize + piece_coord[2] * 1;
-            let piece_color = piece_colors[piece_idx];
+            let board_idx: usize = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
+            let piece_idx: usize = (i * dims[1]) as usize + j as usize;
 
-            if piece_color != 0 {
-                board[board_idx] = piece_color;
+            // place non-empty piece color on board
+            if piece_colors[piece_idx] != 0 {
+                board[board_idx] = piece_colors[piece_idx];
             }
         }
     }
@@ -329,18 +327,7 @@ pub fn load_game(path: &Path, game: &str) -> Board {
     let data: Data = serde_json::from_str(&file).expect("Unable to parse json");
     let game_str = data.0.get(game).unwrap();
 
-    // take game_str and create a vector mapping each character to corresponding color
-    let mut board = Board::new();
-    for c in game_str.chars() {
-        let color = match c {
-            '1' => Color::BLACK,
-            '2' => Color::RED,
-            '3' => Color::YELLOW,
-            '4' => Color::BLUE,
-            _ => Color::EMPTY,
-        };
-        board.push(color);
-    }
-
+    // take game_str and map each character to parsed integer as u8
+    let mut board = game_str.chars().map(|c| c.to_digit(10).unwrap() as u8).collect::<Vec<u8>>();
     return board;
 }

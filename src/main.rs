@@ -1,7 +1,6 @@
 use std::path::Path;
 
 mod game;
-mod solver;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
