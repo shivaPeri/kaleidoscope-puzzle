@@ -6,6 +6,8 @@ use std::path::Path;
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
+use quickbacktrack::{combine, BackTrackSolver, MultiBackTrackSolver, Puzzle, SolveSettings};
+
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Color {
     EMPTY = 0,
@@ -13,6 +15,11 @@ pub enum Color {
     RED = 2,
     YELLOW = 3,
     BLUE = 4
+}
+
+#[derive(Clone)]
+pub struct Kaleidoscope {
+	pub board: [[u8; 8]; 8],
 }
 
 pub struct Move {
@@ -28,8 +35,6 @@ struct Data(HashMap<String, String>);
 pub type Board = Vec<u8>;
 pub type PieceConfig = Vec<u8>;
 pub type Piece = Vec<PieceConfig>;
-
-#[derive(Default, Serialize, Deserialize, Debug)]
 
 const BOARD_SIZE: usize = 8;
 
@@ -216,7 +221,7 @@ pub fn load_pieces() -> Vec<Piece> {
 
 fn is_placeable(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) -> bool {
 
-    let piece = &pieces[turn.piece].configs[turn.config];
+    let piece = &pieces[turn.piece][turn.config];
     let dims: &[u8] = &piece[..2];
     let piece_colors: &[u8] = &piece[2..];
     
@@ -243,7 +248,7 @@ pub fn place_piece(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) {
 
     if !is_placeable(board, pieces, turn) { return; }
 
-    let piece = &pieces[turn.piece].configs[turn.config];
+    let piece = &pieces[turn.piece][turn.config];
     let dims: &[u8] = &piece[..2];
     let piece_colors: &[u8] = &piece[2..];
 
