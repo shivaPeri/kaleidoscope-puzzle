@@ -1,12 +1,10 @@
 mod solver;
 mod generator;
 
-use std::fs;
+use std::{fs, str::FromStr};
 use std::path::Path;
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-
-use quickbacktrack::{combine, BackTrackSolver, MultiBackTrackSolver, Puzzle, SolveSettings};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Color {
@@ -15,11 +13,6 @@ pub enum Color {
     RED = 2,
     YELLOW = 3,
     BLUE = 4
-}
-
-#[derive(Clone)]
-pub struct Kaleidoscope {
-	pub board: [[u8; 8]; 8],
 }
 
 pub struct Move {
@@ -268,6 +261,14 @@ pub fn place_piece(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) {
         }
     }
 
+}
+
+// function to read and parse json given local file path
+// returns a flat vector of colors representing the board
+pub fn load_game_str(path: &Path, game: &str) -> String {
+    let file = fs::read_to_string(path).expect("Unable to read file");
+    let data: Data = serde_json::from_str(&file).expect("Unable to parse json");
+    return String::from_str(data.0.get(game).unwrap()).unwrap();
 }
 
 // function to read and parse json given local file path
