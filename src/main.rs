@@ -27,7 +27,7 @@ impl Puzzle for Kaleidoscope {
 			let mut found_any = false;
 			for y in 0..8 {
 				for x in 0..8 {
-					if self.board[y][x] != 0 { continue; }
+					if self.board[y][x][0] != 0 { continue; }
 					let possible = self.possible([x, y]);
 					if possible.len() == 1 {
 						f(self, [x, y], possible[0]);
@@ -44,7 +44,7 @@ impl Puzzle for Kaleidoscope {
 
         let piece_idx = val[1] as usize;
         let config = val[2] as usize;
-        let piece = self.pieces[piece_idx][config];
+        let piece = &self.pieces[piece_idx][config];
         let dim_1 = piece[0] as usize;
         let dim_2 = piece[1] as usize;
 
@@ -143,34 +143,34 @@ impl Kaleidoscope {
 	// 	return min_pos;
 	// }
 
-    // // Given a an empty cell position, returns a vector of possible values.
-	// pub fn possible(&self, pos: [usize; 2]) -> Vec<usize> {
-	// 	let mut res = vec![];
-	// 	if self.board[pos[1]][pos[0]] != 0 {
-	// 		return res;
-	// 	}
-	// 	'next_val: for v in 1..10 {
-	// 		for x in 0..8 {
-	// 			if self.board[pos[1]][x] == v {
-	// 				continue 'next_val;
-	// 			}
-	// 			if self.board[x][pos[0]] == v {
-	// 				continue 'next_val;
-	// 			}
-	// 		}
-	// 		let block_x = 3 * (pos[0] / 3);
-	// 		let block_y = 3 * (pos[1] / 3);
-	// 		for y in block_y..block_y + 3 {
-	// 			for x in block_x..block_x + 3 {
-	// 				if self.board[y][x] == v {
-	// 					continue 'next_val;
-	// 				}
-	// 			}
-	// 		}
-	// 		res.push(v);
-	// 	}
-	// 	return res;
-	// }
+    // Given a an empty cell position, returns a vector of possible values.
+	pub fn possible(&self, pos: [usize; 2]) -> Vec<[u8; 3]> {
+		let mut res = vec![];
+		// if self.board[pos[1]][pos[0]] != 0 {
+		// 	return res;
+		// }
+		// 'next_val: for v in 1..10 {
+		// 	for x in 0..8 {
+		// 		if self.board[pos[1]][x] == v {
+		// 			continue 'next_val;
+		// 		}
+		// 		if self.board[x][pos[0]] == v {
+		// 			continue 'next_val;
+		// 		}
+		// 	}
+		// 	let block_x = 3 * (pos[0] / 3);
+		// 	let block_y = 3 * (pos[1] / 3);
+		// 	for y in block_y..block_y + 3 {
+		// 		for x in block_x..block_x + 3 {
+		// 			if self.board[y][x] == v {
+		// 				continue 'next_val;
+		// 			}
+		// 		}
+		// 	}
+		// 	res.push(v);
+		// }
+		return res;
+	}
 }
 
 fn main() {
@@ -179,13 +179,13 @@ fn main() {
 	let x = Kaleidoscope::from_str(&game_str);
 	x.print();
 
-	// let settings = SolveSettings::new()
-	// 	.solve_simple(true)
-	// 	.debug(true)
-	// 	.difference(true)
-	// 	.sleep_ms(500);
+	let settings = SolveSettings::new()
+		.solve_simple(true)
+		.debug(true)
+		.difference(true)
+		.sleep_ms(500);
 
-    // let solver = BackTrackSolver::new(x, settings);
+    let solver = BackTrackSolver::new(x, settings);
 	// let solution = solver.solve(Sudoku::find_min_empty, Sudoku::possible);
 
 	// let solution = solution.expect("Expected solution");

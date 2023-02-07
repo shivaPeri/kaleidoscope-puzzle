@@ -222,7 +222,7 @@ fn is_placeable(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) -> bool {
     let dims: &[u8] = &piece[..2];
     let piece_colors: &[u8] = &piece[2..];
     
-    if (turn.row + dims[0] as usize > BOARD_SIZE || turn.col + dims[1] as usize > BOARD_SIZE) {
+    if turn.row + dims[0] as usize > BOARD_SIZE || turn.col + dims[1] as usize > BOARD_SIZE {
         return false;
     }
 
