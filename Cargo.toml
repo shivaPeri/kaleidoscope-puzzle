@@ -9,3 +9,4 @@ edition = "2021"
 quickbacktrack = "0.7.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.91"
+termion = "2.0.1"

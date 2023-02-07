@@ -4,6 +4,9 @@ Code Modified from https://github.com/advancedresearch/quickbacktrack/blob/maste
 
 */
 
+use termion::{color::{self, Color}, style};
+
+use std::io;
 use std::path::Path;
 use quickbacktrack::{combine, BackTrackSolver, MultiBackTrackSolver, Puzzle, SolveSettings};
 
@@ -55,6 +58,7 @@ impl Puzzle for Kaleidoscope {
             }
         }
         self.used[piece_idx] = true;
+        self.used2[piece_idx] = Some(pos);
 	}
 
     // get current piece placed on a given position of the board
@@ -62,7 +66,7 @@ impl Puzzle for Kaleidoscope {
 		self.board[pos[1]][pos[0]]
 	}
 
-    // 
+    // TODO: debug this
 	fn remove(&mut self, other: &Kaleidoscope) {
 		for y in 0..8 {
 			for x in 0..8 {
@@ -77,7 +81,14 @@ impl Puzzle for Kaleidoscope {
 		println!("----------------");
 		for y in 0..8 {
 			for x in 0..8 {
-                print!("{} ", self.board[y][x][1]);
+                let val = self.board[y][x][1];
+                match self.refboard[y][x] {
+                    1 => print!("{}{} ", color::Fg(color::White), val),
+                    2 => print!("{}{} ", color::Fg(color::Red), val),
+                    3 => print!("{}{} ", color::Fg(color::Yellow), val),
+                    4 => print!("{}{} ", color::Fg(color::Blue), val),
+                    _ => print!("{}{} ", color::Fg(color::Reset), val),
+                };
             }
             println!("");
 		}
@@ -89,6 +100,9 @@ impl Puzzle for Kaleidoscope {
 				if self.board[y][x][0] != self.refboard[y][x] { return false; }
 			}
 		}
+        for i in 0..18 {
+            if self.used2[i] == None { return false; }
+        }
 		return true;
 	}
 }
@@ -144,12 +158,16 @@ impl Kaleidoscope {
 	// }
 
     // Given a an empty cell position, returns a vector of possible values.
+    // TODO: debug thiss
 	pub fn possible(&self, pos: [usize; 2]) -> Vec<[u8; 3]> {
 		let mut res = vec![];
-		// if self.board[pos[1]][pos[0]] != 0 {
-		// 	return res;
-		// }
-		// 'next_val: for v in 1..10 {
+		if self.board[pos[1]][pos[0]][0] != 0 {
+			return res;
+		}
+		'next_piece: for idx in 0..18 {
+            if self.used2[idx] == None {
+                continue 'next_piece;
+            }
 		// 	for x in 0..8 {
 		// 		if self.board[pos[1]][x] == v {
 		// 			continue 'next_val;
@@ -168,12 +186,20 @@ impl Kaleidoscope {
 		// 		}
 		// 	}
 		// 	res.push(v);
-		// }
+		}
 		return res;
 	}
 }
 
 fn main() {
+
+    // testing termion
+    println!("{}Red", color::Fg(color::Red));
+    println!("{}Blue", color::Fg(color::Blue));
+    println!("{}Green", color::Fg(color::Green));
+    // println!("{}Just plain italic", style::Italic);
+
+    println!("{}Red", color::Fg(color::Red));
 
     let game_str = game::load_game_str(Path::new("boards/scraped-boards.json"), "australian-emu");
 	let x = Kaleidoscope::from_str(&game_str);
