@@ -12,68 +12,86 @@ mod game;
 #[derive(Clone)]
 pub struct Kaleidoscope {
     pub refboard: [[u8; 8]; 8],
-	pub board: [[u8; 8]; 8],
+	pub board: [[[u8; 3]; 8]; 8],
     pub pieces: Vec<Vec<Vec<u8>>>,
     pub used: [bool; 18],
+    pub used2: [Option<[usize; 2]>; 18],
 }
 
-// impl Puzzle for Kaleidoscope {
-// 	type Pos = [usize; 2];          // Position of a cell
-// 	type Val = [usize; 2];          // index into pieces, and configuration
+impl Puzzle for Kaleidoscope {
+	type Pos = [usize; 2];          // Position of a cell
+	type Val = [u8; 3];             // color, piece_idx, configuration_idx
 
-// 	fn solve_simple<F: FnMut(&mut Self, Self::Pos, Self::Val)>(&mut self, mut f: F) {
-// 		loop {
-// 			let mut found_any = false;
-// 			for y in 0..8 {
-// 				for x in 0..8 {
-// 					if self.board[y][x] != 0 { continue; }
-// 					let possible = self.possible([x, y]);
-// 					if possible.len() == 1 {
-// 						f(self, [x, y], possible[0]);
-// 						found_any = true;
-// 					}
-// 				}
-// 			}
-// 			if !found_any { break; }
-// 		}
-// 	}
+	fn solve_simple<F: FnMut(&mut Self, Self::Pos, Self::Val)>(&mut self, mut f: F) {
+		loop {
+			let mut found_any = false;
+			for y in 0..8 {
+				for x in 0..8 {
+					if self.board[y][x] != 0 { continue; }
+					let possible = self.possible([x, y]);
+					if possible.len() == 1 {
+						f(self, [x, y], possible[0]);
+						found_any = true;
+					}
+				}
+			}
+			if !found_any { break; }
+		}
+	}
 
-// 	fn set(&mut self, pos: [usize; 2], val: u8) {
-// 		self.board[pos[1]][pos[0]] = val;
-// 	}
+    // place piece on board (ie. make a move)
+	fn set(&mut self, pos: [usize; 2], val: [u8; 3]) {
 
-// 	fn get(&self, pos: [usize; 2]) -> u8 {
-// 		self.board[pos[1]][pos[0]]
-// 	}
+        let piece_idx = val[1] as usize;
+        let config = val[2] as usize;
+        let piece = self.pieces[piece_idx][config];
+        let dim_1 = piece[0] as usize;
+        let dim_2 = piece[1] as usize;
 
-// 	fn remove(&mut self, other: &Sudoku) {
-// 		for y in 0..8 {
-// 			for x in 0..8 {
-// 				if other.board[y][x] != 0 {
-// 					self.board[y][x] = 0;
-// 				}
-// 			}
-// 		}
-// 	}
+        for y in 0..dim_1 {
+            for x in 0..dim_2 {
+                let color = piece[y * dim_2 + x];
+                self.board[pos[1] + y][pos[0] + x] = [color, val[1], val[2]];
+            }
+        }
+        self.used[piece_idx] = true;
+	}
 
-// 	fn print(&self) {
-// 		stdout.lock()("----------------");
-// 		for y in 0..8 {
-// 			for x in 0..8 {
-//                 stdout.lock("{} ", self.board[y][x]);
-//             }
-// 		}
-// 	}
+    // get current piece placed on a given position of the board
+	fn get(&self, pos: [usize; 2]) -> [u8; 3] {
+		self.board[pos[1]][pos[0]]
+	}
 
-// 	fn is_solved(&self) -> bool {
-// 		for y in 0..8 {
-// 			for x in 0..8 {
-// 				if self.board[y][x] == 0 { return false; }
-// 			}
-// 		}
-// 		return true;
-// 	}
-// }
+    // 
+	fn remove(&mut self, other: &Kaleidoscope) {
+		for y in 0..8 {
+			for x in 0..8 {
+				if other.board[y][x][0] != 0 {
+					self.board[y][x][0] = 0;
+				}
+			}
+		}
+	}
+
+	fn print(&self) {
+		println!("----------------");
+		for y in 0..8 {
+			for x in 0..8 {
+                print!("{} ", self.board[y][x][1]);
+            }
+            println!("");
+		}
+	}
+
+	fn is_solved(&self) -> bool {
+		for y in 0..8 {
+			for x in 0..8 {
+				if self.board[y][x][0] != self.refboard[y][x] { return false; }
+			}
+		}
+		return true;
+	}
+}
 
 impl Kaleidoscope {
 
@@ -86,10 +104,11 @@ impl Kaleidoscope {
         }
 
         return Self { 
-            board: [[0; 8]; 8],
+            board: [[[0; 3]; 8]; 8],
             refboard: ref_board,
             pieces: game::load_pieces(),
             used: [false; 18],
+            used2: [None; 18],
         };
     }
 
@@ -97,7 +116,7 @@ impl Kaleidoscope {
 	pub fn find_empty(&self) -> Option<[usize; 2]> {
 		for y in 0..8 {
 			for x in 0..8 {
-				if self.board[y][x] == 0 {
+				if self.board[y][x][0] == 0 {
 					return Some([x, y]);
 				}
 			}
@@ -152,16 +171,6 @@ impl Kaleidoscope {
 	// 	}
 	// 	return res;
 	// }
-
-    pub fn print(&self) {
-        println!("----------------");
-        for y in 0..8 {
-            for x in 0..8 {
-                print!("{} ", self.board[y][x]);
-            }
-            println!();
-        }
-    }
 }
 
 fn main() {
@@ -185,8 +194,5 @@ fn main() {
 	// solution.puzzle.print();
 	// println!("Non-trivial moves: {}", solution.iterations);
 	// println!("Strategy: {}", solution.strategy.unwrap_or(0))
-    
-    let pieces = game::load_pieces();
 
-    println!("{:?}", pieces);
 }
