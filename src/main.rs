@@ -15,15 +15,14 @@ mod game;
 #[derive(Clone)]
 pub struct Kaleidoscope {
     pub refboard: [[u8; 8]; 8],
-	pub board: [[[u8; 3]; 8]; 8],
+	pub board: [[[usize; 4]; 8]; 8],
     pub pieces: Vec<Vec<Vec<u8>>>,
-    pub used: [bool; 18],
-    pub used2: [Option<[usize; 2]>; 18],
+    pub used: [Option<[usize; 2]>; 18],
 }
 
 impl Puzzle for Kaleidoscope {
 	type Pos = [usize; 2];          // Position of a cell
-	type Val = [u8; 3];             // color, piece_idx, configuration_idx
+	type Val = [usize; 4];          // piece_idx, configuration_idx, row, col
 
 	fn solve_simple<F: FnMut(&mut Self, Self::Pos, Self::Val)>(&mut self, mut f: F) {
 		loop {
@@ -43,10 +42,10 @@ impl Puzzle for Kaleidoscope {
 	}
 
     // place piece on board (ie. make a move)
-	fn set(&mut self, pos: [usize; 2], val: [u8; 3]) {
+	fn set(&mut self, pos: [usize; 2], val: [usize; 4]) {
 
-        let piece_idx = val[1] as usize;
-        let config = val[2] as usize;
+        let piece_idx = val[1];
+        let config = val[2];
         let piece = &self.pieces[piece_idx][config];
         let dim_1 = piece[0] as usize;
         let dim_2 = piece[1] as usize;
@@ -54,15 +53,17 @@ impl Puzzle for Kaleidoscope {
         for y in 0..dim_1 {
             for x in 0..dim_2 {
                 let color = piece[y * dim_2 + x];
-                self.board[pos[1] + y][pos[0] + x] = [color, val[1], val[2]];
+                if color != 0 {     // only place non-empty cells
+                    self.board[pos[1] + y][pos[0] + x] = [val[1], val[2], y, x];
+                }
             }
         }
-        self.used[piece_idx] = true;
-        self.used2[piece_idx] = Some(pos);
+;
+        self.used[piece_idx] = Some(pos);
 	}
 
     // get current piece placed on a given position of the board
-	fn get(&self, pos: [usize; 2]) -> [u8; 3] {
+	fn get(&self, pos: [usize; 2]) -> [usize; 4] {
 		self.board[pos[1]][pos[0]]
 	}
 
@@ -81,7 +82,7 @@ impl Puzzle for Kaleidoscope {
 		println!("----------------");
 		for y in 0..8 {
 			for x in 0..8 {
-                let val = self.board[y][x][1];
+                let val = self.board[y][x][0];
                 match self.refboard[y][x] {
                     1 => print!("{}{} ", color::Fg(color::White), val),
                     2 => print!("{}{} ", color::Fg(color::Red), val),
@@ -95,13 +96,8 @@ impl Puzzle for Kaleidoscope {
 	}
 
 	fn is_solved(&self) -> bool {
-		for y in 0..8 {
-			for x in 0..8 {
-				if self.board[y][x][0] != self.refboard[y][x] { return false; }
-			}
-		}
         for i in 0..18 {
-            if self.used2[i] == None { return false; }
+            if self.used[i] == None { return false; }
         }
 		return true;
 	}
@@ -118,11 +114,10 @@ impl Kaleidoscope {
         }
 
         return Self { 
-            board: [[[0; 3]; 8]; 8],
+            board: [[[0; 4]; 8]; 8],
             refboard: ref_board,
             pieces: game::load_pieces(),
-            used: [false; 18],
-            used2: [None; 18],
+            used: [None; 18],
         };
     }
 
@@ -158,34 +153,32 @@ impl Kaleidoscope {
 	// }
 
     // Given a an empty cell position, returns a vector of possible values.
-    // TODO: debug thiss
-	pub fn possible(&self, pos: [usize; 2]) -> Vec<[u8; 3]> {
+	pub fn possible(&self, pos: [usize; 2]) -> Vec<[usize; 4]> {
+
 		let mut res = vec![];
-		if self.board[pos[1]][pos[0]][0] != 0 {
+		if self.board[pos[0]][pos[1]][0] != 0 {
 			return res;
 		}
-		'next_piece: for idx in 0..18 {
-            if self.used2[idx] == None {
+		'next_piece: for idx in 0..18 {     // for each piece
+            if self.used[idx] == None {
                 continue 'next_piece;
             }
-		// 	for x in 0..8 {
-		// 		if self.board[pos[1]][x] == v {
-		// 			continue 'next_val;
-		// 		}
-		// 		if self.board[x][pos[0]] == v {
-		// 			continue 'next_val;
-		// 		}
-		// 	}
-		// 	let block_x = 3 * (pos[0] / 3);
-		// 	let block_y = 3 * (pos[1] / 3);
-		// 	for y in block_y..block_y + 3 {
-		// 		for x in block_x..block_x + 3 {
-		// 			if self.board[y][x] == v {
-		// 				continue 'next_val;
-		// 			}
-		// 		}
-		// 	}
-		// 	res.push(v);
+            'next_config: for config in 0..self.pieces[idx].len() {     // for each config
+                let piece = &self.pieces[idx][config];
+                let dim_1 = piece[0] as usize;
+                let dim_2 = piece[1] as usize;
+                for y in 0..dim_1 {
+                    for x in 0..dim_2 {
+                        let color = piece[y * dim_2 + x];
+                        if color != 0 {     // only place non-empty cells
+                            if self.board[pos[0] + y][pos[1] + x][0] != 0 {
+                                continue 'next_config;
+                            }
+                        }
+                    }
+                }
+                res.push([idx, config, 0, 0]);
+            }
 		}
 		return res;
 	}
