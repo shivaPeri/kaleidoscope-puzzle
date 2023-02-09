@@ -15,14 +15,14 @@ mod game;
 #[derive(Clone)]
 pub struct Kaleidoscope {
     pub refboard: [[u8; 8]; 8],
-	pub board: [[[usize; 4]; 8]; 8],
+	pub board: [[[u8; 3]; 8]; 8],
     pub pieces: Vec<Vec<Vec<u8>>>,
     pub used: [Option<[usize; 2]>; 18],
 }
 
 impl Puzzle for Kaleidoscope {
 	type Pos = [usize; 2];          // Position of a cell
-	type Val = [usize; 4];          // piece_idx, configuration_idx, row, col
+	type Val = [u8; 3];             // color, piece_idx, configuration_idx
 
 	fn solve_simple<F: FnMut(&mut Self, Self::Pos, Self::Val)>(&mut self, mut f: F) {
 		loop {
@@ -31,6 +31,7 @@ impl Puzzle for Kaleidoscope {
 				for x in 0..8 {
 					if self.board[y][x][0] != 0 { continue; }
 					let possible = self.possible([x, y]);
+                    print!("{}{} ", color::Fg(color::White), possible.len());
 					if possible.len() == 1 {
 						f(self, [x, y], possible[0]);
 						found_any = true;
@@ -42,10 +43,10 @@ impl Puzzle for Kaleidoscope {
 	}
 
     // place piece on board (ie. make a move)
-	fn set(&mut self, pos: [usize; 2], val: [usize; 4]) {
+	fn set(&mut self, pos: [usize; 2], val: [u8; 3]) {
 
-        let piece_idx = val[1];
-        let config = val[2];
+        let piece_idx = val[1] as usize;
+        let config = val[2] as usize;
         let piece = &self.pieces[piece_idx][config];
         let dim_1 = piece[0] as usize;
         let dim_2 = piece[1] as usize;
@@ -54,7 +55,7 @@ impl Puzzle for Kaleidoscope {
             for x in 0..dim_2 {
                 let color = piece[y * dim_2 + x];
                 if color != 0 {     // only place non-empty cells
-                    self.board[pos[1] + y][pos[0] + x] = [val[1], val[2], y, x];
+                    self.board[pos[1] + y][pos[0] + x] = [color, val[1], val[2]];
                 }
             }
         }
@@ -63,26 +64,27 @@ impl Puzzle for Kaleidoscope {
 	}
 
     // get current piece placed on a given position of the board
-	fn get(&self, pos: [usize; 2]) -> [usize; 4] {
+	fn get(&self, pos: [usize; 2]) -> [u8; 3] {
 		self.board[pos[1]][pos[0]]
 	}
 
     // TODO: debug this
 	fn remove(&mut self, other: &Kaleidoscope) {
-		for y in 0..8 {
-			for x in 0..8 {
-				if other.board[y][x][0] != 0 {
-					self.board[y][x][0] = 0;
-				}
-			}
-		}
+		// for y in 0..8 {
+		// 	for x in 0..8 {
+		// 		if other.board[y][x][0] != 0 {
+		// 			self.board[y][x][0] = 0;
+		// 		}
+		// 	}
+		// }
+        print!("remove");
 	}
 
 	fn print(&self) {
 		println!("----------------");
 		for y in 0..8 {
 			for x in 0..8 {
-                let val = self.board[y][x][0];
+                let val = self.board[y][x][1];  // piece_idx
                 match self.refboard[y][x] {
                     1 => print!("{}{} ", color::Fg(color::White), val),
                     2 => print!("{}{} ", color::Fg(color::Red), val),
@@ -96,6 +98,15 @@ impl Puzzle for Kaleidoscope {
 	}
 
 	fn is_solved(&self) -> bool {
+
+        // check if all cells are filled
+        for y in 0..8 {
+            for x in 0..8 {
+                if self.board[y][x][0] == 0 { return false; }
+            }
+        }
+
+        // check if all pieces are used
         for i in 0..18 {
             if self.used[i] == None { return false; }
         }
@@ -114,7 +125,7 @@ impl Kaleidoscope {
         }
 
         return Self { 
-            board: [[[0; 4]; 8]; 8],
+            board: [[[0; 3]; 8]; 8],
             refboard: ref_board,
             pieces: game::load_pieces(),
             used: [None; 18],
@@ -153,35 +164,50 @@ impl Kaleidoscope {
 	// }
 
     // Given a an empty cell position, returns a vector of possible values.
-	pub fn possible(&self, pos: [usize; 2]) -> Vec<[usize; 4]> {
+	pub fn possible(&self, pos: [usize; 2]) -> Vec<[u8; 3]> {
 
 		let mut res = vec![];
 		if self.board[pos[0]][pos[1]][0] != 0 {
 			return res;
 		}
-		'next_piece: for idx in 0..18 {     // for each piece
-            if self.used[idx] == None {
+
+		'next_piece: for idx in (0..18).rev() {     // for each piece
+            if self.used[idx] != None {
                 continue 'next_piece;
             }
+
             'next_config: for config in 0..self.pieces[idx].len() {     // for each config
                 let piece = &self.pieces[idx][config];
                 let dim_1 = piece[0] as usize;
                 let dim_2 = piece[1] as usize;
                 for y in 0..dim_1 {
                     for x in 0..dim_2 {
+
+                        let board_y = pos[0] + y;
+                        let board_x = pos[1] + x;
+                        // check if piece fits in the board
+                        if board_x >= 8 || board_y >= 8 {
+                            continue 'next_config;
+                        }
+
+                        // check if piece color matches the board
                         let color = piece[y * dim_2 + x];
-                        if color != 0 {     // only place non-empty cells
-                            if self.board[pos[0] + y][pos[1] + x][0] != 0 {
+                        if color != 0 {                                     // non-empty piece color
+                            if self.board[board_y][board_x][0] != 0 {       // non-empty board color
+                                continue 'next_config;
+                            }
+                            if color != self.refboard[board_y][board_x] {   // mismatched board color
                                 continue 'next_config;
                             }
                         }
                     }
                 }
-                res.push([idx, config, 0, 0]);
+                // piece[0] will either be the desired color or empty (0)
+                res.push([piece[0], idx as u8, config as u8]);
             }
-		}
-		return res;
-	}
+        }
+        return res;
+    }
 }
 
 fn main() {
@@ -205,12 +231,13 @@ fn main() {
 		.sleep_ms(500);
 
     let solver = BackTrackSolver::new(x, settings);
+    let solution = solver.solve(Kaleidoscope::find_empty, Kaleidoscope::possible);
 	// let solution = solver.solve(Sudoku::find_min_empty, Sudoku::possible);
 
-	// let solution = solution.expect("Expected solution");
+	let solution = solution.expect("Expected solution");
 
-	// println!("Difference:");
-	// solution.puzzle.print();
+	println!("Difference:");
+	solution.puzzle.print();
 	// println!("Non-trivial moves: {}", solution.iterations);
 	// println!("Strategy: {}", solution.strategy.unwrap_or(0))
 
