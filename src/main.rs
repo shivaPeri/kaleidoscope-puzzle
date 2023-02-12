@@ -1,14 +1,7 @@
-/*
-
-Code Modified from https://github.com/advancedresearch/quickbacktrack/blob/master/examples/sudoku.rs
-
-*/
-
 use termion::{color::{self, Color}, style};
 
 use std::io;
 use std::path::Path;
-use quickbacktrack::{combine, BackTrackSolver, MultiBackTrackSolver, Puzzle, SolveSettings};
 
 mod game;
 
@@ -17,30 +10,12 @@ pub struct Kaleidoscope {
     pub refboard: [[u8; 8]; 8],
 	pub board: [[[u8; 3]; 8]; 8],
     pub pieces: Vec<Vec<Vec<u8>>>,
-    pub used: [Option<[usize; 2]>; 18],
+    pub used: [Option<[usize; 2]>; 18],     // pos_y, pos_x, config_idx
 }
 
-impl Puzzle for Kaleidoscope {
-	type Pos = [usize; 2];          // Position of a cell
-	type Val = [u8; 3];             // color, piece_idx, configuration_idx
-
-	fn solve_simple<F: FnMut(&mut Self, Self::Pos, Self::Val)>(&mut self, mut f: F) {
-		loop {
-			let mut found_any = false;
-			for y in 0..8 {
-				for x in 0..8 {
-					if self.board[y][x][0] != 0 { continue; }
-					let possible = self.possible([x, y]);
-                    print!("{}{} ", color::Fg(color::White), possible.len());
-					if possible.len() == 1 {
-						f(self, [x, y], possible[0]);
-						found_any = true;
-					}
-				}
-			}
-			if !found_any { break; }
-		}
-	}
+impl Kaleidoscope {
+	// type Pos = [usize; 2];          // Position of a cell
+	// type Val = [u8; 3];             // color, piece_idx, configuration_idx
 
     // place piece on board (ie. make a move)
 	fn set(&mut self, pos: [usize; 2], val: [u8; 3]) {
@@ -59,7 +34,6 @@ impl Puzzle for Kaleidoscope {
                 }
             }
         }
-;
         self.used[piece_idx] = Some(pos);
 	}
 
@@ -112,9 +86,6 @@ impl Puzzle for Kaleidoscope {
         }
 		return true;
 	}
-}
-
-impl Kaleidoscope {
 
     // Create a new game board from a string.
     pub fn from_str(board_str: &str) -> Self {
@@ -144,47 +115,29 @@ impl Kaleidoscope {
 		return None;
 	}
 
-    // // Finds the empty cell with the least possible values.
-	// pub fn find_min_empty(&self) -> Option<[usize; 2]> {
-	// 	let mut min = None;
-	// 	let mut min_pos = None;
-	// 	for y in 0..8 {
-	// 		for x in 0..8 {
-	// 			if self.board[y][x] == 0 {
-	// 				let possible = self.possible([x, y]);
-	// 				if possible.len() == 0 {return None};
-	// 				if min.is_none() || min.unwrap() > possible.len() {
-	// 					min = Some(possible.len());
-	// 					min_pos = Some([x, y]);
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// 	return min_pos;
-	// }
-
-    // Given a an empty cell position, returns a vector of possible values.
-	pub fn possible(&self, pos: [usize; 2]) -> Vec<[u8; 3]> {
+    // Given a piece, returns a vector of possible placements and configurations.
+	pub fn possible(&self, piece_idx: usize) -> Vec<[usize; 3]> {
 
 		let mut res = vec![];
-		if self.board[pos[0]][pos[1]][0] != 0 {
-			return res;
-		}
+        if self.used[piece_idx] != None {
+            return res;
+        }
 
-		'next_piece: for idx in (0..18).rev() {     // for each piece
-            if self.used[idx] != None {
-                continue 'next_piece;
-            }
+		'next_pos: for pos in 0..64 {     // for each position
+            
+            let pos_x = pos % 8;
+            let pos_y = pos / 8;
+            if self.board[pos_y][pos_x][0] != 0 { continue 'next_pos; }
 
-            'next_config: for config in 0..self.pieces[idx].len() {     // for each config
-                let piece = &self.pieces[idx][config];
+            'next_config: for config in 0..self.pieces[piece_idx].len() {     // for each config
+                let piece = &self.pieces[piece_idx][config];
                 let dim_1 = piece[0] as usize;
                 let dim_2 = piece[1] as usize;
                 for y in 0..dim_1 {
                     for x in 0..dim_2 {
 
-                        let board_y = pos[0] + y;
-                        let board_x = pos[1] + x;
+                        let board_y = pos_y + y;
+                        let board_x = pos_x + x;
                         // check if piece fits in the board
                         if board_x >= 8 || board_y >= 8 {
                             continue 'next_config;
@@ -202,8 +155,7 @@ impl Kaleidoscope {
                         }
                     }
                 }
-                // piece[0] will either be the desired color or empty (0)
-                res.push([piece[0], idx as u8, config as u8]);
+                res.push([pos_y, pos_x, config]);
             }
         }
         return res;
@@ -223,22 +175,4 @@ fn main() {
     let game_str = game::load_game_str(Path::new("boards/scraped-boards.json"), "australian-emu");
 	let x = Kaleidoscope::from_str(&game_str);
 	x.print();
-
-	let settings = SolveSettings::new()
-		.solve_simple(true)
-		.debug(true)
-		.difference(true)
-		.sleep_ms(500);
-
-    let solver = BackTrackSolver::new(x, settings);
-    let solution = solver.solve(Kaleidoscope::find_empty, Kaleidoscope::possible);
-	// let solution = solver.solve(Sudoku::find_min_empty, Sudoku::possible);
-
-	let solution = solution.expect("Expected solution");
-
-	println!("Difference:");
-	solution.puzzle.print();
-	// println!("Non-trivial moves: {}", solution.iterations);
-	// println!("Strategy: {}", solution.strategy.unwrap_or(0))
-
 }
