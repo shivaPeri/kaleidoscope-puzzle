@@ -29,6 +29,9 @@ pub type Board = Vec<u8>;
 pub type PieceConfig = Vec<u8>;
 pub type Piece = Vec<PieceConfig>;
 
+// ordering of 18 pieces to place
+pub type Strategy = [usize; 18];
+
 const BOARD_SIZE: usize = 8;
 
 pub fn load_pieces() -> Vec<Piece> {
@@ -216,36 +219,40 @@ pub fn load_pieces() -> Vec<Piece> {
     return pieces;
 }
 
+#[derive(Default, Debug)]
+struct Piece2 {
+    name: u8,
+    config: Vec<u8>,
+}
+
+impl Piece2 {
+
+
+    pub fn get_piece_color(piece: &PieceConfig, row: usize, col: usize) -> u8 {
+        let dims: &[u8] = &piece[..2];
+        let piece_colors: &[u8] = &piece[2..];
+        let piece_idx: usize = row * dims[1] as usize + col;
+        return piece_colors[piece_idx];
+    }
+
+    pub fn print(&self, row: usize, col: usize) {
+        // let dims: &[u8] = &self.config[..2];
+        // let piece_colors: &[u8] = &self.config[2..];
+        // for i in 0..dims[0] {
+        //     for j in 0..dims[1] {
+        //         print!("{} ", piece_colors[i as usize * dims[1] as usize + j as usize]);
+        //     }
+        //     println!("");
+        // }
+    }
+}
+
+
 pub fn get_piece_color(piece: &PieceConfig, row: usize, col: usize) -> u8 {
     let dims: &[u8] = &piece[..2];
     let piece_colors: &[u8] = &piece[2..];
     let piece_idx: usize = row * dims[1] as usize + col;
     return piece_colors[piece_idx];
-}
-
-fn is_placeable(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) -> bool {
-
-    let piece = &pieces[turn.piece][turn.config];
-    let dims: &[u8] = &piece[..2];
-    let piece_colors: &[u8] = &piece[2..];
-    
-    if turn.row + dims[0] as usize > BOARD_SIZE || turn.col + dims[1] as usize > BOARD_SIZE {
-        return false;
-    }
-
-    for i in 0..dims[0] {
-        for j in 0..dims[1] {
-            let board_idx: usize = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-            let piece_idx: usize = (i * dims[1]) as usize + j as usize;
-
-            // non-empty piece color and non-empty board color => collision
-            if piece_colors[piece_idx] != 0 && board[board_idx] != 0 {
-                return false;
-            }
-        }
-    }
-
-    return true;
 }
 
 pub fn print_piece(piece: &PieceConfig, row: usize, col: usize) {
@@ -262,28 +269,6 @@ pub fn print_piece(piece: &PieceConfig, row: usize, col: usize) {
             }
         }
     }
-}
-
-pub fn place_piece(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) {
-
-    if !is_placeable(board, pieces, turn) { return; }
-
-    let piece = &pieces[turn.piece][turn.config];
-    let dims: &[u8] = &piece[..2];
-    let piece_colors: &[u8] = &piece[2..];
-
-    for i in 0..dims[0] {
-        for j in 0..dims[1] {
-            let board_idx: usize = (turn.row + i as usize) * BOARD_SIZE + turn.col + j as usize;
-            let piece_idx: usize = (i * dims[1]) as usize + j as usize;
-
-            // place non-empty piece color on board
-            if piece_colors[piece_idx] != 0 {
-                board[board_idx] = piece_colors[piece_idx];
-            }
-        }
-    }
-
 }
 
 // function to read and parse json given local file path
