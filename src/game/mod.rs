@@ -216,6 +216,13 @@ pub fn load_pieces() -> Vec<Piece> {
     return pieces;
 }
 
+pub fn get_piece_color(piece: &PieceConfig, row: usize, col: usize) -> u8 {
+    let dims: &[u8] = &piece[..2];
+    let piece_colors: &[u8] = &piece[2..];
+    let piece_idx: usize = row * dims[1] as usize + col;
+    return piece_colors[piece_idx];
+}
+
 fn is_placeable(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) -> bool {
 
     let piece = &pieces[turn.piece][turn.config];
@@ -239,6 +246,22 @@ fn is_placeable(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) -> bool {
     }
 
     return true;
+}
+
+pub fn print_piece(piece: &PieceConfig, row: usize, col: usize) {
+    let dims: &[u8] = &piece[..2];
+    let piece_colors: &[u8] = &piece[2..];
+
+    for i in 0..8 {
+        for j in 0..8 {
+            if i >= row && i < row + dims[0] as usize && j >= col && j < col + dims[1] as usize {
+                let piece_idx: usize = (i - row) * dims[1] as usize + (j - col);
+                print!("{} ", piece_colors[piece_idx]);
+            } else {
+                print!("  ");
+            }
+        }
+    }
 }
 
 pub fn place_piece(board: &mut Board, pieces: &Vec<Piece>, turn: &Move) {

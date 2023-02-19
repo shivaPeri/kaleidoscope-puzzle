@@ -1,3 +1,4 @@
+use game::get_piece_color;
 use termion::{color::{self, Color}, style};
 
 use std::io;
@@ -42,18 +43,6 @@ impl Kaleidoscope {
 		self.board[pos[1]][pos[0]]
 	}
 
-    // TODO: debug this
-	fn remove(&mut self, other: &Kaleidoscope) {
-		// for y in 0..8 {
-		// 	for x in 0..8 {
-		// 		if other.board[y][x][0] != 0 {
-		// 			self.board[y][x][0] = 0;
-		// 		}
-		// 	}
-		// }
-        print!("remove");
-	}
-
 	fn print(&self) {
 		println!("----------------");
 		for y in 0..8 {
@@ -65,6 +54,22 @@ impl Kaleidoscope {
                     3 => print!("{}{} ", color::Fg(color::Yellow), val),
                     4 => print!("{}{} ", color::Fg(color::Blue), val),
                     _ => print!("{}{} ", color::Fg(color::Reset), val),
+                };
+            }
+            println!("");
+		}
+	}
+
+    fn print_ref(&self) {
+		println!("----------------");
+		for y in 0..8 {
+			for x in 0..8 {
+                match self.refboard[y][x] {
+                    1 => print!("{}□ ", color::Fg(color::White)),
+                    2 => print!("{}■ ", color::Fg(color::Red)),
+                    3 => print!("{}■ ", color::Fg(color::Yellow)),
+                    4 => print!("{}■ ", color::Fg(color::Blue)),
+                    _ => print!("{}■ ", color::Fg(color::Reset)),
                 };
             }
             println!("");
@@ -127,29 +132,29 @@ impl Kaleidoscope {
             
             let pos_x = pos % 8;
             let pos_y = pos / 8;
-            if self.board[pos_y][pos_x][0] != 0 { continue 'next_pos; }
+            if self.board[pos_x][pos_y][0] != 0 { continue 'next_pos; }
 
             'next_config: for config in 0..self.pieces[piece_idx].len() {     // for each config
                 let piece = &self.pieces[piece_idx][config];
                 let dim_1 = piece[0] as usize;
                 let dim_2 = piece[1] as usize;
-                for y in 0..dim_1 {
-                    for x in 0..dim_2 {
+                for x in 0..dim_1 {
+                    for y in 0..dim_2 {
 
-                        let board_y = pos_y + y;
                         let board_x = pos_x + x;
+                        let board_y = pos_y + y;
                         // check if piece fits in the board
                         if board_x >= 8 || board_y >= 8 {
                             continue 'next_config;
                         }
 
                         // check if piece color matches the board
-                        let color = piece[y * dim_2 + x];
+                        let color = game::get_piece_color(piece, x, y);
                         if color != 0 {                                     // non-empty piece color
-                            if self.board[board_y][board_x][0] != 0 {       // non-empty board color
+                            if self.board[board_x][board_y][0] != 0 {       // non-empty board color
                                 continue 'next_config;
                             }
-                            if color != self.refboard[board_y][board_x] {   // mismatched board color
+                            if color != self.refboard[board_x][board_y] {   // mismatched board color
                                 continue 'next_config;
                             }
                         }
@@ -174,5 +179,14 @@ fn main() {
 
     let game_str = game::load_game_str(Path::new("boards/scraped-boards.json"), "australian-emu");
 	let x = Kaleidoscope::from_str(&game_str);
-	x.print();
+	x.print_ref();
+
+    let test = x.possible(17);
+
+    for thing in test.iter(){
+        let config = thing[2];
+        let piece = &x.pieces[17][config];
+        // println!("{} {} {:?}", thing[0], thing[1], piece);
+        game::print_piece(piece, thing[0], thing[1]);
+    }
 }

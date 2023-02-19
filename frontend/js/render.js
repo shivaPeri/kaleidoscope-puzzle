@@ -4,7 +4,7 @@ let REDFILL, BLACKFILL, BLUEFILL, YELLOWFILL
 let gamepieces = []
 let refboard, gameboard
 let games
-let game_name = "fancy-pinwheel"
+let game_name = "australian-emu"
 
 /* ***************** INIT + MAIN LOOP ******************* */
 
