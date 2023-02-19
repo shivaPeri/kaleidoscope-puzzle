@@ -1,7 +1,7 @@
-use super::{Board, Piece};
+use super::{Piece};
 
-pub fn solve(board: &Board, pieces: &Vec<Piece>) {
-    let mut used = vec![false; pieces.len()];
+// pub fn solve(board: &Board, pieces: &Vec<Piece>) {
+//     let mut used = vec![false; pieces.len()];
     
-}
+// }
 

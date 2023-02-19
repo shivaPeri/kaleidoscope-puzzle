@@ -1,4 +1,4 @@
-use game::get_piece_color;
+use game::{Piece, PieceConfig, Strategy};
 use termion::{color::{self, Color}, style};
 
 use std::io;
@@ -10,7 +10,7 @@ mod game;
 pub struct Kaleidoscope {
     pub refboard: [[u8; 8]; 8],
 	pub board: [[[u8; 3]; 8]; 8],
-    pub pieces: Vec<Vec<Vec<u8>>>,
+    pub pieces: Vec<Piece>,
     pub used: [Option<[usize; 2]>; 18],     // pos_y, pos_x, config_idx
 }
 
@@ -18,25 +18,25 @@ impl Kaleidoscope {
 	// type Pos = [usize; 2];          // Position of a cell
 	// type Val = [u8; 3];             // color, piece_idx, configuration_idx
 
-    // place piece on board (ie. make a move)
-	fn set(&mut self, pos: [usize; 2], val: [u8; 3]) {
+    // // place piece on board (ie. make a move)
+	// fn set(&mut self, pos: [usize; 2], val: [u8; 3]) {
 
-        let piece_idx = val[1] as usize;
-        let config = val[2] as usize;
-        let piece = &self.pieces[piece_idx][config];
-        let dim_1 = piece[0] as usize;
-        let dim_2 = piece[1] as usize;
+    //     let piece_idx = val[1] as usize;
+    //     let config = val[2] as usize;
+    //     let piece = &self.pieces[piece_idx][config];
+    //     let dim_1 = piece[0] as usize;
+    //     let dim_2 = piece[1] as usize;
 
-        for y in 0..dim_1 {
-            for x in 0..dim_2 {
-                let color = piece[y * dim_2 + x];
-                if color != 0 {     // only place non-empty cells
-                    self.board[pos[1] + y][pos[0] + x] = [color, val[1], val[2]];
-                }
-            }
-        }
-        self.used[piece_idx] = Some(pos);
-	}
+    //     for y in 0..dim_1 {
+    //         for x in 0..dim_2 {
+    //             let color = piece[y * dim_2 + x];
+    //             if color != 0 {     // only place non-empty cells
+    //                 self.board[pos[1] + y][pos[0] + x] = [color, val[1], val[2]];
+    //             }
+    //         }
+    //     }
+    //     self.used[piece_idx] = Some(pos);
+	// }
 
     // get current piece placed on a given position of the board
 	fn get(&self, pos: [usize; 2]) -> [u8; 3] {
@@ -45,10 +45,10 @@ impl Kaleidoscope {
 
 	fn print(&self) {
 		println!("----------------");
-		for y in 0..8 {
-			for x in 0..8 {
-                let val = self.board[y][x][1];  // piece_idx
-                match self.refboard[y][x] {
+		for x in 0..8 {
+		    for y in 0..8 {
+                let val = self.board[x][y][1];  // piece_idx
+                match self.refboard[x][y] {
                     1 => print!("{}{} ", color::Fg(color::White), val),
                     2 => print!("{}{} ", color::Fg(color::Red), val),
                     3 => print!("{}{} ", color::Fg(color::Yellow), val),
@@ -62,9 +62,9 @@ impl Kaleidoscope {
 
     fn print_ref(&self) {
 		println!("----------------");
-		for y in 0..8 {
-			for x in 0..8 {
-                match self.refboard[y][x] {
+        for x in 0..8 {
+		    for y in 0..8 {
+                match self.refboard[x][y] {
                     1 => print!("{}□ ", color::Fg(color::White)),
                     2 => print!("{}■ ", color::Fg(color::Red)),
                     3 => print!("{}■ ", color::Fg(color::Yellow)),
@@ -123,6 +123,8 @@ impl Kaleidoscope {
     // Given a piece, returns a vector of possible placements and configurations.
 	pub fn possible(&self, piece_idx: usize) -> Vec<[usize; 3]> {
 
+        let piece = &self.pieces[piece_idx];
+
 		let mut res = vec![];
         if self.used[piece_idx] != None {
             return res;
@@ -134,10 +136,11 @@ impl Kaleidoscope {
             let pos_y = pos / 8;
             if self.board[pos_x][pos_y][0] != 0 { continue 'next_pos; }
 
-            'next_config: for config in 0..self.pieces[piece_idx].len() {     // for each config
-                let piece = &self.pieces[piece_idx][config];
-                let dim_1 = piece[0] as usize;
-                let dim_2 = piece[1] as usize;
+            'next_config: for config_idx in 0..piece.configs.len() {     // for each config
+                let config = &piece.configs[config_idx];
+                let dim_1 = config[0] as usize;
+                let dim_2 = config[1] as usize;
+
                 for x in 0..dim_1 {
                     for y in 0..dim_2 {
 
@@ -149,7 +152,7 @@ impl Kaleidoscope {
                         }
 
                         // check if piece color matches the board
-                        let color = game::get_piece_color(piece, x, y);
+                        let color = piece.get_piece_color(config_idx, x, y);
                         if color != 0 {                                     // non-empty piece color
                             if self.board[board_x][board_y][0] != 0 {       // non-empty board color
                                 continue 'next_config;
@@ -160,7 +163,7 @@ impl Kaleidoscope {
                         }
                     }
                 }
-                res.push([pos_y, pos_x, config]);
+                res.push([pos_y, pos_x, config_idx]);
             }
         }
         return res;
@@ -184,9 +187,7 @@ fn main() {
     let test = x.possible(17);
 
     for thing in test.iter(){
-        let config = thing[2];
-        let piece = &x.pieces[17][config];
-        // println!("{} {} {:?}", thing[0], thing[1], piece);
-        game::print_piece(piece, thing[0], thing[1]);
+        println!("{} {} {:?}", thing[0], thing[1], x.pieces[17].configs[thing[2]]);
+        x.pieces[17].print(thing[2], thing[0], thing[1]);
     }
 }
