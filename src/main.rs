@@ -6,10 +6,12 @@ use std::path::Path;
 
 mod game;
 
+pub type Move = [usize; 3];     // row, col, config_idx
+
 #[derive(Clone)]
 pub struct Kaleidoscope {
     pub refboard: [[u8; 8]; 8],
-	pub board: [[[u8; 3]; 8]; 8],
+	pub board: [[[u8; 5]; 8]; 8],       // color, piece_idx, config_idx, row, col
     pub pieces: Vec<Piece>,
     pub used: [Option<[usize; 2]>; 18],     // pos_y, pos_x, config_idx
 }
@@ -18,28 +20,27 @@ impl Kaleidoscope {
 	// type Pos = [usize; 2];          // Position of a cell
 	// type Val = [u8; 3];             // color, piece_idx, configuration_idx
 
-    // // place piece on board (ie. make a move)
-	// fn set(&mut self, pos: [usize; 2], val: [u8; 3]) {
+    // place piece on board (ie. make a move)
+	fn set(&mut self, piece_idx: usize, m: Move) {
 
-    //     let piece_idx = val[1] as usize;
-    //     let config = val[2] as usize;
-    //     let piece = &self.pieces[piece_idx][config];
-    //     let dim_1 = piece[0] as usize;
-    //     let dim_2 = piece[1] as usize;
+        let pos = [m[1], m[0]];
+        let piece = &self.pieces[piece_idx].configs[m[2]];
+        let dim_1 = piece[0] as usize;
+        let dim_2 = piece[1] as usize;
 
-    //     for y in 0..dim_1 {
-    //         for x in 0..dim_2 {
-    //             let color = piece[y * dim_2 + x];
-    //             if color != 0 {     // only place non-empty cells
-    //                 self.board[pos[1] + y][pos[0] + x] = [color, val[1], val[2]];
-    //             }
-    //         }
-    //     }
-    //     self.used[piece_idx] = Some(pos);
-	// }
+        for y in 0..dim_1 {
+            for x in 0..dim_2 {
+                let color = piece[y * dim_2 + x];
+                if color != 0 {     // only place non-empty cells
+                    self.board[pos[1] + y][pos[0] + x] = [color, piece_idx as u8, m[2] as u8, m[0] as u8, m[1] as u8];
+                }
+            }
+        }
+        self.used[piece_idx] = Some(pos);
+	}
 
     // get current piece placed on a given position of the board
-	fn get(&self, pos: [usize; 2]) -> [u8; 3] {
+	fn get(&self, pos: [usize; 2]) -> [u8; 5] {
 		self.board[pos[1]][pos[0]]
 	}
 
@@ -101,7 +102,7 @@ impl Kaleidoscope {
         }
 
         return Self { 
-            board: [[[0; 3]; 8]; 8],
+            board: [[[0; 5]; 8]; 8],
             refboard: ref_board,
             pieces: game::load_pieces(),
             used: [None; 18],
@@ -121,7 +122,7 @@ impl Kaleidoscope {
 	}
 
     // Given a piece, returns a vector of possible placements and configurations.
-	pub fn possible(&self, piece_idx: usize) -> Vec<[usize; 3]> {
+	pub fn possible(&self, piece_idx: usize) -> Vec<Move> {
 
         let piece = &self.pieces[piece_idx];
 
@@ -181,13 +182,15 @@ fn main() {
     println!("{}Red", color::Fg(color::Red));
 
     let game_str = game::load_game_str(Path::new("boards/scraped-boards.json"), "australian-emu");
+    // let game_str = game::load_game_str(Path::new("boards/boards.json"), "classic");
 	let x = Kaleidoscope::from_str(&game_str);
 	x.print_ref();
 
-    let test = x.possible(17);
+    let test_idx = 17;
+    let test = x.possible(test_idx);
 
     for thing in test.iter(){
-        println!("{} {} {:?}", thing[0], thing[1], x.pieces[17].configs[thing[2]]);
-        x.pieces[17].print(thing[2], thing[0], thing[1]);
+        println!("{} {}", thing[0], thing[1]);
+        x.pieces[test_idx].print(thing[2], thing[1], thing[0]);
     }
 }

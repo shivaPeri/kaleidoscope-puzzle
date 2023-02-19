@@ -37,11 +37,11 @@ impl Piece {
         }
     }
 
-    pub fn get_piece_color(&self, config_idx: usize, x: usize, y: usize) -> u8 {
+    pub fn get_piece_color(&self, config_idx: usize, y: usize, x: usize) -> u8 {
         let piece = &self.configs[config_idx];
         let dims = &piece[..2];
         let piece_colors: &[u8] = &piece[2..];
-        let idx: usize = x * dims[1] as usize + y;
+        let idx: usize = y * dims[1] as usize + x;
         return piece_colors[idx];
     }
 
@@ -62,7 +62,7 @@ impl Piece {
                         2 => print!("{}■ ", color::Fg(color::Red)),
                         3 => print!("{}■ ", color::Fg(color::Yellow)),
                         4 => print!("{}■ ", color::Fg(color::Blue)),
-                        _ => print!("{}■ ", color::Fg(color::Reset)),
+                        _ => print!("{}□ ", color::Fg(color::Reset)),
                     };
                 } else {
                     print!("{}□ ", color::Fg(color::White));
@@ -105,10 +105,10 @@ fn load_piece_configs() -> Vec<Vec<PieceConfig>> {
     ];
 
     let trom_1: Vec<PieceConfig> = vec![
-        vec![1,3, 2,1,1],
+        vec![1,3, 2,1,2],
         vec![1,3, 3,1,4],
         vec![1,3, 4,1,3],
-        vec![3,1, 2,1,1],
+        vec![3,1, 2,1,2],
         vec![3,1, 3,1,4],
         vec![3,1, 4,1,3],
     ];
