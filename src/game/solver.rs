@@ -32,9 +32,11 @@ impl Solver {
 
             let curr_move = self.possible.len() - 1;
             let curr_piece_idx = self.strategy[curr_move];
+            self.game.remove(curr_piece_idx);
             let next_move = self.possible.len();
 
             if self.possible[curr_move].len() == 0 {
+                self.game.remove(curr_piece_idx);
                 self.possible.pop_back();
                 continue;
             }
@@ -43,6 +45,7 @@ impl Solver {
             let move_ = self.possible[curr_move].pop_front().unwrap();
             // println!("{:?} {:?}", move_, self.possible);
             self.game.set(curr_piece_idx, move_);
+            self.game.print();
 
             if self.game.is_solved() {
                 return true;
