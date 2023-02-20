@@ -1,9 +1,7 @@
 use clap::Parser;
 use std::path::Path;
-use crate::game::Strategy;
-use termion::{color::{self}};
-
-mod game;
+use termion::color;
+use kaleidoscope_puzzle::game::{self, Strategy};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]

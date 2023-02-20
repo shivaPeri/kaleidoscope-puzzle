@@ -43,15 +43,15 @@ impl Piece {
         let dims = &piece[..2];
         let piece_colors: &[u8] = &piece[2..];
         let idx: usize = y * dims[1] as usize + x;
-        return piece_colors[idx];
+        piece_colors[idx]
     }
 
     pub fn print(&self, config_idx: usize, row: usize, col: usize) {
 
         println!("----------------");
         let piece = &self.configs[config_idx];
-        let width = *&piece[0] as usize;
-        let height = *&piece[1] as usize;
+        let width = piece[0] as usize;
+        let height = piece[1] as usize;
 
         for i in 0..8 {
             for j in 0..8 {
@@ -69,7 +69,7 @@ impl Piece {
                     print!("{}□ ", color::Fg(color::White));
                 }
             }
-            println!("");
+            println!();
         }
     }
 }
@@ -287,7 +287,7 @@ impl Kaleidoscope {
         ];
     
         let pieces: Vec<Vec<PieceConfig>> = vec![mono_1, mono_2, domo_1, trom_1, trom_2, trom_3, trom_4, tetr_1, tetr_2, tetr_3, tetr_4, tetr_5, tetr_6, tetr_7, tetr_8, tetr_9, tetr_10, oct_1];
-        return pieces;
+        pieces
     }
     
     pub fn load_pieces() -> Vec<Piece> {
@@ -298,7 +298,7 @@ impl Kaleidoscope {
             pieces.push(Piece::new(i, configs.clone()));
         }
     
-        return pieces;
+        pieces
     }
 
     // place piece on board (ie. make a move)
@@ -354,7 +354,7 @@ impl Kaleidoscope {
                     _ => print!("{}{} ", color::Fg(color::Reset), val),
                 };
             }
-            println!("");
+            println!();
 		}
 	}
 
@@ -370,17 +370,17 @@ impl Kaleidoscope {
                     _ => print!("{}■ ", color::Fg(color::Reset)),
                 };
             }
-            println!("");
+            println!();
 		}
 	}
 
 	pub fn is_solved(&self) -> bool {
         for y in 0..8 {
             for x in 0..8 {
-                if self.board[y][x] == None { return false; }
+                if self.board[y][x].is_none() { return false; }
             }
         }
-		return true;
+		true
 	}
 
     // Given a piece, returns a vector of possible placements and configurations.
@@ -413,7 +413,7 @@ impl Kaleidoscope {
                         // check if piece color matches the board
                         let color = piece.get_piece_color(config_idx, x, y);
                         if color != 0 {                                     // non-empty piece color
-                            if self.board[board_x][board_y] != None {        // non-empty board color
+                            if self.board[board_x][board_y].is_some() {        // non-empty board color
                                 continue 'next_config;
                             }
                             if color != self.refboard[board_x][board_y] {   // mismatched board color
@@ -425,6 +425,6 @@ impl Kaleidoscope {
                 res.push_back([pos_y, pos_x, config_idx]);
             }
         }
-        return res;
+        res
     }
 }

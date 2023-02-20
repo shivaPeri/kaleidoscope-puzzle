@@ -27,13 +27,13 @@ impl Solver {
 
     pub fn solve(&mut self) -> bool {
 
-        while self.possible.len() > 0 {
+        while !self.possible.is_empty() {
 
             let curr_move = self.possible.len() - 1;
             let curr_piece_idx = self.strategy[curr_move];
             
             // if there are no available moves for the current piece
-            if self.possible[curr_move].len() == 0 {
+            if self.possible[curr_move].is_empty() {
 
                 // undo the last move, if possible
                 if curr_move != 0 {
@@ -66,6 +66,6 @@ impl Solver {
                 println!("{} {} {} {:?}", self.moves, curr_move, curr_piece_idx, self.possible);
             }
         }
-        return false;
+        false
     }
 }

@@ -2,8 +2,15 @@
 name = "solver"
 version = "0.1.0"
 edition = "2021"
+authors = ["Shiva Peri"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "kaleidoscope_puzzle"
+path = "src/lib.rs"
+
+[[bin]]
+name = "kaleidoscope_puzzle_runner"
+path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.1.6", features = ["derive"] }
