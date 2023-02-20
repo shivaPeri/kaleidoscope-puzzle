@@ -1,16 +1,24 @@
-
-
+use clap::Parser;
 use std::path::Path;
 use crate::game::Strategy;
 use termion::{color::{self}};
 
 mod game;
 
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    #[arg(short, long)]
+    name: String,
+}
+
 fn main() {
 
-    // let x = game::Kaleidoscope::new(Path::new("boards/boards.json"), "classic");
+    // let x = game::Kaleidoscope::new(Path::new("boards/boards.json"), "chaos");
 	// let x = game::Kaleidoscope::new(Path::new("boards/scraped-boards.json"), "australian-emu");
-    let x = game::Kaleidoscope::new(Path::new("boards/scraped-boards.json"), "goldfish");
+
+    let args = Args::parse();
+    let x = game::Kaleidoscope::new(Path::new("boards/scraped-boards.json"), &args.name);
 	x.print_ref();
 
     let strategy: Strategy = [17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];

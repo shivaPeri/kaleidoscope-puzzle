@@ -343,8 +343,8 @@ impl Kaleidoscope {
 		for x in 0..8 {
 		    for y in 0..8 {
                 let val = match self.board[x][y] {
-                    Some(piece) => piece as i8,
-                    None => -1,
+                    Some(piece) => String::from_utf8(vec![(17 - piece) + 65]).unwrap(),
+                    None => " ".to_string(),
                 };
                 match self.refboard[x][y] {
                     1 => print!("{}{} ", color::Fg(color::White), val),
@@ -363,7 +363,7 @@ impl Kaleidoscope {
         for x in 0..8 {
 		    for y in 0..8 {
                 match self.refboard[x][y] {
-                    1 => print!("{}■ ", color::Fg(color::White)),
+                    1 => print!("{}□ ", color::Fg(color::White)),
                     2 => print!("{}■ ", color::Fg(color::Red)),
                     3 => print!("{}■ ", color::Fg(color::Yellow)),
                     4 => print!("{}■ ", color::Fg(color::Blue)),
