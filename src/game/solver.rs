@@ -7,6 +7,7 @@ pub struct Solver {
     pub strategy: Strategy,
     pub moves: u128,
     possible: VecDeque<VecDeque<Move>>,   // possible moves for each piece
+    debug: bool
 }
 
 impl Solver {
@@ -20,62 +21,69 @@ impl Solver {
             game,
             strategy,
             moves: 0,
-            possible
+            possible,
+            debug: false
         }
     }
 
     pub fn solve(&mut self) -> bool {
 
-        
+        // NOTE TO SELF: the bug is with removing one too many pieces too early
         while self.possible.len() > 0 {
-            // println!("{} {:?}", self.moves, self.possible);
 
             let curr_move = self.possible.len() - 1;
             let curr_piece_idx = self.strategy[curr_move];
-            self.game.remove(curr_piece_idx);
-            let next_move = self.possible.len();
-
+            
+            // if there are no available moves for the current piece
             if self.possible[curr_move].len() == 0 {
-                self.game.remove(curr_piece_idx);
+
+                // undo the last move, if possible
+                if curr_move != 0 {
+                    self.game.remove(self.strategy[curr_move - 1]);
+                }
+
+                // remove the empty list of moves from the list of possible moves
                 self.possible.pop_back();
-                // println!("pop {}", curr_piece_idx);
                 continue;
             }
 
-
+            // place the first possible current move on the board
             let move_ = self.possible[curr_move].pop_front().unwrap();
-            // println!("{:?} {:?}", move_, self.possible);
             self.game.set(curr_piece_idx, move_);
 
-            // println!("{}, {:?}", self.moves, self.possible);
-            
-
-            if self.game.is_solved() {
+            // exit condition
+            if curr_move == self.strategy.len() - 1 && self.game.is_solved() {
                 return true;
-            } 
-            // else if next_move == 18 {
-            //     self.possible.pop_back();
-            //     self.possible.pop_back();
-            //     continue;
-            // }
-
-            let next_piece_idx = self.strategy[next_move];
-            let next_moves = self.game.possible(next_piece_idx);
-
-            if next_moves.len() == 0 {
-                self.game.remove(curr_piece_idx);
-            } else {
-                self.possible.push_back(next_moves);
             }
 
-            println!("{} {} {} {:?}", self.moves, curr_move, curr_piece_idx, self.possible);
-            self.game.print();
+            // get the next piece's possible moves
+            let next_move = curr_move + 1;
+            let next_piece_idx = self.strategy[next_move];
+            let next_moves = self.game.possible(next_piece_idx);
+            self.possible.push_back(next_moves);
+
+            if self.debug {
+                self.game.print();
+                println!("{} {} {} {:?}", self.moves, curr_move, curr_piece_idx, self.possible);
+            }
 
             self.moves += 1;
 
-            // if self.moves > 50 {
+            // if self.possible.len() >= 8 && 
+            //     self.possible[0].len() == 3 &&
+            //     self.possible[1].len() == 2 &&
+            //     self.possible[2].len() == 7 && 
+            //     self.possible[3].len() == 11 &&
+            //     self.possible[4].len() == 4 && 
+            //     self.possible[5].len() == 3 &&
+            //     self.possible[6].len() == 3 && 
+            //     self.possible[7].len() == 2 {
             //     return false;
             // }
+
+            // // if self.moves > 11750 {
+            // //     return false;
+            // // }
         }
 
         return false;

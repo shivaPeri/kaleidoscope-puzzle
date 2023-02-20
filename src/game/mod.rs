@@ -145,25 +145,25 @@ impl Kaleidoscope {
         ];
     
         let trom_3: Vec<PieceConfig> = vec![
-            vec![2,2, 0,1,2,1],
+            vec![2,2, 0,1,1,2],
             vec![2,2, 1,0,2,1],
             vec![2,2, 1,2,0,1],
-            vec![2,2, 1,2,1,0],
-            vec![2,2, 0,1,3,1],
+            vec![2,2, 2,1,1,0],
+            vec![2,2, 0,1,1,3],
             vec![2,2, 1,0,3,1],
             vec![2,2, 1,3,0,1],
-            vec![2,2, 1,3,1,0],
+            vec![2,2, 3,1,1,0],
         ];
     
         let trom_4: Vec<PieceConfig> = vec![
-            vec![2,2, 0,2,1,2],
+            vec![2,2, 0,2,2,1],
             vec![2,2, 2,0,1,2],
             vec![2,2, 2,1,0,2],
-            vec![2,2, 2,1,2,0],
+            vec![2,2, 1,2,2,0],
             vec![2,2, 0,4,3,1],
-            vec![2,2, 4,0,3,1],
-            vec![2,2, 4,3,0,1],
-            vec![2,2, 4,3,1,0],
+            vec![2,2, 3,0,1,4],
+            vec![2,2, 4,1,0,3],
+            vec![2,2, 1,3,4,0],
         ];
     
         let tetr_1: Vec<PieceConfig> = vec![
@@ -394,7 +394,7 @@ impl Kaleidoscope {
             
             let pos_x = pos % 8;
             let pos_y = pos / 8;
-            if self.board[pos_x][pos_y] != None { continue 'next_pos; }
+            // if self.board[pos_x][pos_y] != None { continue 'next_pos; }
 
             'next_config: for config_idx in 0..piece.configs.len() {     // for each config
                 let config = &piece.configs[config_idx];
