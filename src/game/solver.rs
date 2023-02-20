@@ -1,5 +1,5 @@
 
-use super::{Piece, Kaleidoscope, Move, Strategy};
+use super::{Kaleidoscope, Move, Strategy};
 use std::collections::VecDeque;
 
 pub struct Solver {
@@ -28,7 +28,6 @@ impl Solver {
 
     pub fn solve(&mut self) -> bool {
 
-        // NOTE TO SELF: the bug is with removing one too many pieces too early
         while self.possible.len() > 0 {
 
             let curr_move = self.possible.len() - 1;
@@ -50,6 +49,7 @@ impl Solver {
             // place the first possible current move on the board
             let move_ = self.possible[curr_move].pop_front().unwrap();
             self.game.set(curr_piece_idx, move_);
+            self.moves += 1;
 
             // exit condition
             if curr_move == self.strategy.len() - 1 && self.game.is_solved() {
@@ -66,26 +66,7 @@ impl Solver {
                 self.game.print();
                 println!("{} {} {} {:?}", self.moves, curr_move, curr_piece_idx, self.possible);
             }
-
-            self.moves += 1;
-
-            // if self.possible.len() >= 8 && 
-            //     self.possible[0].len() == 3 &&
-            //     self.possible[1].len() == 2 &&
-            //     self.possible[2].len() == 7 && 
-            //     self.possible[3].len() == 11 &&
-            //     self.possible[4].len() == 4 && 
-            //     self.possible[5].len() == 3 &&
-            //     self.possible[6].len() == 3 && 
-            //     self.possible[7].len() == 2 {
-            //     return false;
-            // }
-
-            // // if self.moves > 11750 {
-            // //     return false;
-            // // }
         }
-
         return false;
     }
 }

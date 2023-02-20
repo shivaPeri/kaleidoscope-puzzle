@@ -390,11 +390,10 @@ impl Kaleidoscope {
 
 		let mut res = VecDeque::new();
 
-		'next_pos: for pos in 0..64 {     // for each position
+		for pos in 0..64 {     // for each position
             
             let pos_x = pos % 8;
             let pos_y = pos / 8;
-            // if self.board[pos_x][pos_y] != None { continue 'next_pos; }
 
             'next_config: for config_idx in 0..piece.configs.len() {     // for each config
                 let config = &piece.configs[config_idx];
