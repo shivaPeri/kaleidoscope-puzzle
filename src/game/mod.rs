@@ -1,4 +1,4 @@
-mod solver;
+pub mod solver;
 mod generator;
 
 use std::{fs, str::FromStr};
@@ -6,6 +6,7 @@ use std::path::Path;
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use termion::{color::{self}};
+use std::collections::VecDeque;
 
 // for Reference
 
@@ -306,15 +307,29 @@ impl Kaleidoscope {
 	pub fn set(&mut self, piece_idx: usize, m: Move) {
 
         let pos = [m[1], m[0]];
+        // println!("{} {}", m[2], &self.pieces[piece_idx].configs.len());
+
         let piece = &self.pieces[piece_idx].configs[m[2]];
         let dim_1 = piece[0] as usize;
         let dim_2 = piece[1] as usize;
 
-        for y in 0..dim_1 {
-            for x in 0..dim_2 {
-                let color = piece[y * dim_2 + x];
+        for x in 0..dim_1 {
+            for y in 0..dim_2 {
+                let color = piece[x * dim_2 + y];
                 if color != 0 {     // only place non-empty cells
-                    self.board[pos[1] + y][pos[0] + x] = [color, piece_idx as u8, m[2] as u8, m[0] as u8, m[1] as u8];
+                    self.board[pos[0] + x][pos[1] + y] = [color, piece_idx as u8, m[2] as u8, m[0] as u8, m[1] as u8];
+                }
+            }
+        }
+	}
+
+    // remove piece on board (ie. undo a move)
+	pub fn remove(&mut self, piece_idx: usize) {
+
+        for x in 0..8 {
+            for y in 0..8 {
+                if self.board[x][y][1] == piece_idx as u8 {
+                    self.board[x][y] = [0, 0, 0, 0, 0];
                 }
             }
         }
@@ -342,7 +357,7 @@ impl Kaleidoscope {
         for x in 0..8 {
 		    for y in 0..8 {
                 match self.refboard[x][y] {
-                    1 => print!("{}□ ", color::Fg(color::White)),
+                    1 => print!("{}■ ", color::Fg(color::White)),
                     2 => print!("{}■ ", color::Fg(color::Red)),
                     3 => print!("{}■ ", color::Fg(color::Yellow)),
                     4 => print!("{}■ ", color::Fg(color::Blue)),
@@ -363,11 +378,11 @@ impl Kaleidoscope {
 	}
 
     // Given a piece, returns a vector of possible placements and configurations.
-	pub fn possible(&self, piece_idx: usize) -> Vec<Move> {
+	pub fn possible(&self, piece_idx: usize) -> VecDeque<Move> {
 
         let piece = &self.pieces[piece_idx];
 
-		let mut res = vec![];
+		let mut res = VecDeque::new();
         if self.used[piece_idx] != None {
             return res;
         }
@@ -405,7 +420,7 @@ impl Kaleidoscope {
                         }
                     }
                 }
-                res.push([pos_y, pos_x, config_idx]);
+                res.push_back([pos_y, pos_x, config_idx]);
             }
         }
         return res;

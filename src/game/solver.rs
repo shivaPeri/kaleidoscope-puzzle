@@ -1,71 +1,65 @@
 
 use super::{Piece, Kaleidoscope, Move, Strategy};
+use std::collections::VecDeque;
 
-// pub fn solve(board: &Board, pieces: &Vec<Piece>) {
-//     let mut used = vec![false; pieces.len()];
-    
-// }
-
-struct Solver {
-    game: Kaleidoscope,
-    strategy: Strategy,
-    moves: u128,
+pub struct Solver {
+    pub game: Kaleidoscope,
+    pub strategy: Strategy,
+    pub moves: u128,
+    possible: VecDeque<VecDeque<Move>>,   // possible moves for each piece
 }
 
 impl Solver {
     pub fn new(game: Kaleidoscope, strategy: Strategy) -> Self {
+        
+        let first_piece_idx = strategy[0];
+        let mut possible = VecDeque::new();
+        possible.push_back(game.possible(first_piece_idx));
+
         Self {
             game,
             strategy,
             moves: 0,
+            possible
         }
     }
 
     pub fn solve(&mut self) -> bool {
-        let mut piece_idx = 0;
-        let mut moves: Vec<Move> = vec![];
-        let mut used = vec![false; self.game.pieces.len()];
-        let mut board = self.game.board.clone();
-        let mut refboard = self.game.refboard.clone();
 
-        // loop {
-        //     if piece_idx == self.game.pieces.len() {
-        //         return true;
-        //     }
+        
+        while self.possible.len() > 0 && self.possible[0].len() > 0 {
+            // println!("{} {:?}", self.moves, self.possible);
 
-        //     let piece = &self.game.pieces[piece_idx];
-        //     let possible = self.game.possible(piece_idx, &board, &refboard);
+            let curr_move = self.possible.len() - 1;
+            let curr_piece_idx = self.strategy[curr_move];
+            let next_move = self.possible.len();
 
-        //     if possible.len() == 0 {
-        //         if piece_idx == 0 {
-        //             return false;
-        //         }
-        //         piece_idx -= 1;
-        //         let last_move = moves.pop().unwrap();
-        //         used[last_move[2] as usize] = false;
-        //         self.game.unplace_piece(&mut board, &mut refboard, &last_move);
-        //         continue;
-        //     }
+            if self.possible[curr_move].len() == 0 {
+                self.possible.pop_back();
+                continue;
+            }
 
-        //     let mut move_idx = 0;
-        //     let mut best_move = possible[0];
-        //     let mut best_score = 0;
-        //     for (i, m) in possible.iter().enumerate() {
-        //         let score = self.strategy.score(&self.game, &board, &refboard, m);
-        //         if score > best_score {
-        //             best_score = score;
-        //             best_move = *m;
-        //             move_idx = i;
-        //         }
-        //     }
 
-        //     self.game.place_piece(&mut board, &mut refboard, &best_move);
-        //     moves.push(best_move);
-        //     used[best_move[2] as usize] = true;
-        //     piece_idx += 1;
-        //     self.moves += 1;
-        // }
+            let move_ = self.possible[curr_move].pop_front().unwrap();
+            // println!("{:?} {:?}", move_, self.possible);
+            self.game.set(curr_piece_idx, move_);
 
-        return true;
+            if self.game.is_solved() {
+                return true;
+            }
+
+            let next_piece_idx = self.strategy[next_move];
+            let next_moves = self.game.possible(next_piece_idx);
+
+            if next_moves.len() == 0 {
+                self.game.remove(curr_piece_idx);
+            } else {
+                self.possible.push_back(next_moves);
+            }
+
+            self.moves += 1
+        }
+
+        return false;
     }
 }

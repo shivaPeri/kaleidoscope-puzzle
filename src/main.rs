@@ -1,27 +1,19 @@
-use game::{Piece, PieceConfig, Strategy};
-use termion::{color::{self, Color}, style};
 
-use std::io;
+
 use std::path::Path;
+use crate::game::Strategy;
 
 mod game;
 
 
 fn main() {
 
-    // testing termion
-    println!("{}Red", color::Fg(color::Red));
-    println!("{}Blue", color::Fg(color::Blue));
-    println!("{}Green", color::Fg(color::Green));
-    // println!("{}Just plain italic", style::Italic);
-
-    println!("{}Red", color::Fg(color::Red));
-
-    // let game_str = game::load_game_str(Path::new("boards/boards.json"), "classic");
+    // let x = game::Kaleidoscope::new(Path::new("boards/boards.json"), "classic");
 	let x = game::Kaleidoscope::new(Path::new("boards/scraped-boards.json"), "australian-emu");
 	x.print_ref();
 
-    let test_idx = 10;
+    // testing ****************************************
+    let test_idx = 17;
     let test = x.possible(test_idx);
 
     for thing in test.iter(){
@@ -31,4 +23,19 @@ fn main() {
 
     println!("");
     println!("{}", test.len());
+
+
+    // testing ****************************************
+
+    let strategy: Strategy = [17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+    let mut solver = game::solver::Solver::new(x, strategy);
+
+    if solver.solve() {
+        println!("Solved!");
+    } else {
+        println!("No solution found.");
+    }
+
+    println!("{} moves", solver.moves);
+
 }
