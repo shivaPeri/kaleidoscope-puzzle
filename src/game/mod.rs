@@ -80,9 +80,8 @@ pub type Move = [usize; 3];     // row, col, config_idx
 #[derive(Clone)]
 pub struct Kaleidoscope {
     pub refboard: [[u8; 8]; 8],
-	pub board: [[[u8; 5]; 8]; 8],       // color, piece_idx, config_idx, row, col
+	pub board: [[Option<[u8; 5]>; 8]; 8],   // color, piece_idx, config_idx, row, col
     pub pieces: Vec<Piece>,
-    pub used: [Option<[usize; 2]>; 18],     // pos_y, pos_x, config_idx
 }
 
 impl Kaleidoscope {
@@ -100,10 +99,9 @@ impl Kaleidoscope {
         }
 
         Self { 
-            board: [[[0; 5]; 8]; 8],
+            board: [[None; 8]; 8],
             refboard: ref_board,
             pieces: Self::load_pieces(),
-            used: [None; 18],
         }
     }
 
@@ -307,17 +305,17 @@ impl Kaleidoscope {
 	pub fn set(&mut self, piece_idx: usize, m: Move) {
 
         let pos = [m[1], m[0]];
-        // println!("{} {}", m[2], &self.pieces[piece_idx].configs.len());
+        let config_idx = m[2];
 
-        let piece = &self.pieces[piece_idx].configs[m[2]];
+        let piece = &self.pieces[piece_idx].configs[config_idx];
         let dim_1 = piece[0] as usize;
         let dim_2 = piece[1] as usize;
 
         for x in 0..dim_1 {
             for y in 0..dim_2 {
-                let color = piece[x * dim_2 + y];
+                let color = self.pieces[piece_idx].get_piece_color(config_idx, x, y);
                 if color != 0 {     // only place non-empty cells
-                    self.board[pos[0] + x][pos[1] + y] = [color, piece_idx as u8, m[2] as u8, m[0] as u8, m[1] as u8];
+                    self.board[pos[0] + x][pos[1] + y] = Some([color, piece_idx as u8, m[2] as u8, m[0] as u8, m[1] as u8]);
                 }
             }
         }
@@ -328,8 +326,13 @@ impl Kaleidoscope {
 
         for x in 0..8 {
             for y in 0..8 {
-                if self.board[x][y][1] == piece_idx as u8 {
-                    self.board[x][y] = [0, 0, 0, 0, 0];
+                match self.board[x][y] {
+                    Some(piece) => {
+                        if piece[1] == piece_idx as u8 {
+                            self.board[x][y] = None;
+                        }
+                    },
+                    None => continue,
                 }
             }
         }
@@ -339,7 +342,10 @@ impl Kaleidoscope {
 		println!("----------------");
 		for x in 0..8 {
 		    for y in 0..8 {
-                let val = self.board[x][y][1];  // piece_idx
+                let val = match self.board[x][y] {
+                    Some(piece) => piece[1] as i8,
+                    None => -1,
+                };
                 match self.refboard[x][y] {
                     1 => print!("{}{} ", color::Fg(color::White), val),
                     2 => print!("{}{} ", color::Fg(color::Red), val),
@@ -371,7 +377,7 @@ impl Kaleidoscope {
 	pub fn is_solved(&self) -> bool {
         for y in 0..8 {
             for x in 0..8 {
-                if self.board[y][x][0] == 0 { return false; }
+                if self.board[y][x] == None { return false; }
             }
         }
 		return true;
@@ -383,15 +389,12 @@ impl Kaleidoscope {
         let piece = &self.pieces[piece_idx];
 
 		let mut res = VecDeque::new();
-        if self.used[piece_idx] != None {
-            return res;
-        }
 
 		'next_pos: for pos in 0..64 {     // for each position
             
             let pos_x = pos % 8;
             let pos_y = pos / 8;
-            if self.board[pos_x][pos_y][0] != 0 { continue 'next_pos; }
+            if self.board[pos_x][pos_y] != None { continue 'next_pos; }
 
             'next_config: for config_idx in 0..piece.configs.len() {     // for each config
                 let config = &piece.configs[config_idx];
@@ -411,7 +414,7 @@ impl Kaleidoscope {
                         // check if piece color matches the board
                         let color = piece.get_piece_color(config_idx, x, y);
                         if color != 0 {                                     // non-empty piece color
-                            if self.board[board_x][board_y][0] != 0 {       // non-empty board color
+                            if self.board[board_x][board_y] != None {        // non-empty board color
                                 continue 'next_config;
                             }
                             if color != self.refboard[board_x][board_y] {   // mismatched board color

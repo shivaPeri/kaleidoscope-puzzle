@@ -27,7 +27,7 @@ impl Solver {
     pub fn solve(&mut self) -> bool {
 
         
-        while self.possible.len() > 0 && self.possible[0].len() > 0 {
+        while self.possible.len() > 0 {
             // println!("{} {:?}", self.moves, self.possible);
 
             let curr_move = self.possible.len() - 1;
@@ -38,6 +38,7 @@ impl Solver {
             if self.possible[curr_move].len() == 0 {
                 self.game.remove(curr_piece_idx);
                 self.possible.pop_back();
+                // println!("pop {}", curr_piece_idx);
                 continue;
             }
 
@@ -45,11 +46,18 @@ impl Solver {
             let move_ = self.possible[curr_move].pop_front().unwrap();
             // println!("{:?} {:?}", move_, self.possible);
             self.game.set(curr_piece_idx, move_);
-            self.game.print();
+
+            // println!("{}, {:?}", self.moves, self.possible);
+            
 
             if self.game.is_solved() {
                 return true;
-            }
+            } 
+            // else if next_move == 18 {
+            //     self.possible.pop_back();
+            //     self.possible.pop_back();
+            //     continue;
+            // }
 
             let next_piece_idx = self.strategy[next_move];
             let next_moves = self.game.possible(next_piece_idx);
@@ -60,7 +68,14 @@ impl Solver {
                 self.possible.push_back(next_moves);
             }
 
-            self.moves += 1
+            println!("{} {} {} {:?}", self.moves, curr_move, curr_piece_idx, self.possible);
+            self.game.print();
+
+            self.moves += 1;
+
+            // if self.moves > 50 {
+            //     return false;
+            // }
         }
 
         return false;
