@@ -1,5 +1,5 @@
 pub mod solver;
-mod generator;
+pub mod generator;
 
 use std::{fs, str::FromStr};
 use std::path::Path;
@@ -80,7 +80,7 @@ pub type Move = [usize; 3];     // row, col, config_idx
 #[derive(Clone)]
 pub struct Kaleidoscope {
     pub refboard: [[u8; 8]; 8],
-	pub board: [[Option<[u8; 5]>; 8]; 8],   // color, piece_idx, config_idx, row, col
+	pub board: [[Option<u8>; 8]; 8],   // piece_idx
     pub pieces: Vec<Piece>,
 }
 
@@ -315,7 +315,7 @@ impl Kaleidoscope {
             for y in 0..dim_2 {
                 let color = self.pieces[piece_idx].get_piece_color(config_idx, x, y);
                 if color != 0 {     // only place non-empty cells
-                    self.board[pos[0] + x][pos[1] + y] = Some([color, piece_idx as u8, m[2] as u8, m[0] as u8, m[1] as u8]);
+                    self.board[pos[0] + x][pos[1] + y] = Some(piece_idx as u8);
                 }
             }
         }
@@ -328,7 +328,7 @@ impl Kaleidoscope {
             for y in 0..8 {
                 match self.board[x][y] {
                     Some(piece) => {
-                        if piece[1] == piece_idx as u8 {
+                        if piece == piece_idx as u8 {
                             self.board[x][y] = None;
                         }
                     },
@@ -343,7 +343,7 @@ impl Kaleidoscope {
 		for x in 0..8 {
 		    for y in 0..8 {
                 let val = match self.board[x][y] {
-                    Some(piece) => piece[1] as i8,
+                    Some(piece) => piece as i8,
                     None => -1,
                 };
                 match self.refboard[x][y] {

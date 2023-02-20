@@ -1,4 +1,3 @@
-
 use super::{Kaleidoscope, Move, Strategy};
 use std::collections::VecDeque;
 
