@@ -2,7 +2,7 @@ use super::{Kaleidoscope, Move, Strategy};
 use std::collections::VecDeque;
 use std::time::{self, Instant};
 
-pub struct Solver {
+pub struct BacktrackingSolver {
     pub game: Kaleidoscope,
     pub strategy: Strategy,
     pub moves: u128,
@@ -11,7 +11,7 @@ pub struct Solver {
     debug: bool
 }
 
-impl Solver {
+impl BacktrackingSolver {
     pub fn new(game: Kaleidoscope, strategy: Strategy) -> Self {
         
         let first_piece_idx = strategy[0];
@@ -74,3 +74,31 @@ impl Solver {
         false
     }
 }
+
+
+// TODO: review this code
+pub struct BeamSearchSolver {
+    pub game: Kaleidoscope,
+    pub strategy: Strategy,
+    pub moves: u128,
+    pub time: Option<time::Duration>,
+    possible: VecDeque<VecDeque<Move>>,   // possible moves for each piece
+    debug: bool
+}
+
+// impl BeamSearchSolver {
+//     pub fn new(game: Kaleidoscope, strategy: Strategy) -> Self {
+        
+//         let first_piece_idx = strategy[0];
+//         let mut possible = VecDeque::new();
+//         possible.push_back(game.possible(first_piece_idx));
+
+//         Self {
+//             game,
+//             strategy,
+//             moves: 0,
+//             time: None,
+//             possible,
+//             debug: false
+//         }
+//     }
