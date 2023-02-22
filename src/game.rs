@@ -1,11 +1,11 @@
 pub mod solver;
 pub mod generator;
 
-use std::{fs, str::FromStr};
 use std::path::Path;
+use std::{fs, str::FromStr};
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
-use termion::{color::{self}};
+use termion::color;
 use std::collections::VecDeque;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -119,7 +119,7 @@ pub struct Move {
 }
 #[derive(Clone)]
 pub struct Kaleidoscope {
-    pub refboard: Vec<u8>,
+    pub refboard: [u8; 64],
 	pub board: [Option<u8>; 64],   // piece_idx
     pub pieces: Vec<Piece>,
 }
@@ -132,11 +132,12 @@ impl Kaleidoscope {
         let file = fs::read_to_string(path).expect("Unable to read file");
         let data: Data = serde_json::from_str(&file).expect("Unable to parse json");
         let board_str = String::from_str(data.0.get(name).unwrap()).unwrap();
-        let ref_board: Vec<u8> = board_str.chars().map(|c| c.to_digit(10).unwrap() as u8).collect();
+        let refboard: Vec<u8> = board_str.chars().map(|c| c.to_digit(10).unwrap() as u8).collect();
+        let refboard: [u8; 64] = refboard.try_into().unwrap();
 
         Self { 
             board: [None; 64],
-            refboard: ref_board,
+            refboard,
             pieces: Self::load_pieces(),
         }
     }

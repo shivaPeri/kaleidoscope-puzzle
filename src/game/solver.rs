@@ -1,10 +1,12 @@
 use super::{Kaleidoscope, Move, Strategy};
 use std::collections::VecDeque;
+use std::time::{self, Instant};
 
 pub struct Solver {
     pub game: Kaleidoscope,
     pub strategy: Strategy,
     pub moves: u128,
+    pub time: Option<time::Duration>,
     possible: VecDeque<VecDeque<Move>>,   // possible moves for each piece
     debug: bool
 }
@@ -20,6 +22,7 @@ impl Solver {
             game,
             strategy,
             moves: 0,
+            time: None,
             possible,
             debug: false
         }
@@ -27,6 +30,7 @@ impl Solver {
 
     pub fn solve(&mut self) -> bool {
 
+        let now = Instant::now();
         while !self.possible.is_empty() {
 
             let curr_move = self.possible.len() - 1;
@@ -52,6 +56,7 @@ impl Solver {
 
             // exit condition
             if curr_move == self.strategy.len() - 1 && self.game.is_solved() {
+                self.time = Some(now.elapsed());
                 return true;
             }
 

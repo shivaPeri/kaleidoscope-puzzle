@@ -23,7 +23,7 @@ fn main() {
     let mut solver = game::solver::Solver::new(x, strategy);
 
     if solver.solve() {
-        println!("\n{}Solved in {} moves", color::Fg(color::Reset), solver.moves);
+        println!("\n{}Solved in {} moves ({}s)", color::Fg(color::Reset), solver.moves, solver.time.unwrap().as_secs_f64());
         solver.game.print();
     } else {
         println!("{}No solution found.", color::Fg(color::Reset));
