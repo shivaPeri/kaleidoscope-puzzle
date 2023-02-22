@@ -1,47 +1,76 @@
-use super::{Kaleidoscope, Move, Strategy};
+use super::{Kaleidoscope, Move, PlayOrder};
 use std::collections::VecDeque;
 use std::time::{self, Instant};
 
-pub struct BacktrackingSolver {
+type Solution = String;
+
+pub trait Strategy {
+    fn solve(&mut self, game: &mut Kaleidoscope, moves: &mut u128) -> bool;
+}
+
+pub struct KaleidoscopeSolver {
     pub game: Kaleidoscope,
-    pub strategy: Strategy,
     pub moves: u128,
     pub time: Option<time::Duration>,
+}
+
+impl KaleidoscopeSolver {
+    pub fn new(game: Kaleidoscope) -> Self {
+        Self {
+            game,
+            moves: 0,
+            time: None
+        }
+    }
+
+    pub fn print(&self) {
+        self.game.print();
+        println!("{} moves in {}s", self.moves, self.time.unwrap().as_secs_f64());
+    }
+
+    pub fn solve<T: Strategy>(&mut self, strategy: &mut T) -> bool {
+        let now = Instant::now();
+        let solved = strategy.solve(&mut self.game, &mut self.moves);
+        self.time = Some(now.elapsed());
+        solved
+    }
+}
+
+pub struct BacktrackingSolver {
+    pub piece_order: PlayOrder,
     possible: VecDeque<VecDeque<Move>>,   // possible moves for each piece
     debug: bool
 }
 
 impl BacktrackingSolver {
-    pub fn new(game: Kaleidoscope, strategy: Strategy) -> Self {
-        
-        let first_piece_idx = strategy[0];
-        let mut possible = VecDeque::new();
-        possible.push_back(game.possible(first_piece_idx));
-
+    pub fn new(piece_order: PlayOrder) -> Self {
         Self {
-            game,
-            strategy,
-            moves: 0,
-            time: None,
-            possible,
+            piece_order,
+            possible: VecDeque::new(),
             debug: false
         }
     }
+}
 
-    pub fn solve(&mut self) -> bool {
+impl Strategy for BacktrackingSolver {
 
-        let now = Instant::now();
+    fn solve(&mut self, game: &mut Kaleidoscope, moves: &mut u128) -> bool {
+
+        // intialization
+        let first_piece_idx = self.piece_order[0];
+        self.possible.push_back(game.possible(first_piece_idx));
+
         while !self.possible.is_empty() {
 
             let curr_move = self.possible.len() - 1;
-            let curr_piece_idx = self.strategy[curr_move];
+            let curr_piece_idx = self.piece_order[curr_move];
             
             // if there are no available moves for the current piece
             if self.possible[curr_move].is_empty() {
 
                 // undo the last move, if possible
                 if curr_move != 0 {
-                    self.game.remove(self.strategy[curr_move - 1]);
+                    game.remove(self.piece_order[curr_move - 1]);
                 }
 
                 // remove the empty list of moves from the list of possible moves
@@ -51,24 +80,23 @@ impl BacktrackingSolver {
 
             // place the first possible current move on the board
             let move_ = self.possible[curr_move].pop_front().unwrap();
-            self.game.set(curr_piece_idx, move_);
-            self.moves += 1;
+            game.set(curr_piece_idx, move_);
+            *moves += 1;
 
             // exit condition
-            if curr_move == self.strategy.len() - 1 && self.game.is_solved() {
-                self.time = Some(now.elapsed());
+            if curr_move == self.piece_order.len() - 1 && game.is_solved() {
                 return true;
             }
 
             // get the next piece's possible moves
             let next_move = curr_move + 1;
-            let next_piece_idx = self.strategy[next_move];
-            let next_moves = self.game.possible(next_piece_idx);
+            let next_piece_idx = self.piece_order[next_move];
+            let next_moves = game.possible(next_piece_idx);
             self.possible.push_back(next_moves);
 
             if self.debug {
-                self.game.print();
-                println!("{} {} {} {:?}", self.moves, curr_move, curr_piece_idx, self.possible);
+                game.print();
+                println!("{} {} {} {:?}", moves, curr_move, curr_piece_idx, self.possible);
             }
         }
         false
@@ -79,7 +107,6 @@ impl BacktrackingSolver {
 // TODO: review this code
 pub struct BeamSearchSolver {
     pub game: Kaleidoscope,
-    pub strategy: Strategy,
     pub moves: u128,
     pub time: Option<time::Duration>,
     possible: VecDeque<VecDeque<Move>>,   // possible moves for each piece

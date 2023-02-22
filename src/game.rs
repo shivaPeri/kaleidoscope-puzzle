@@ -45,7 +45,7 @@ impl std::fmt::Display for PieceColor {
 struct Data(HashMap<String, String>);
 
 // ordering of 18 pieces to place
-pub type Strategy = [usize; 18];
+pub type PlayOrder = [usize; 18];
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PieceConfig {
