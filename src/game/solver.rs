@@ -2,8 +2,6 @@ use super::{Kaleidoscope, Move, PlayOrder};
 use std::collections::VecDeque;
 use std::time::{self, Instant};
 
-type Solution = String;
-
 pub trait Strategy {
     fn solve(&mut self, game: &mut Kaleidoscope, moves: &mut u128) -> bool;
 }
@@ -24,8 +22,12 @@ impl KaleidoscopeSolver {
     }
 
     pub fn print(&self) {
-        self.game.print();
-        println!("{} moves in {}s", self.moves, self.time.unwrap().as_secs_f64());
+        if self.game.is_solved() {
+            println!("\nSolved. {} moves in {}s", self.moves, self.time.unwrap().as_secs_f64());
+            self.game.print();
+        } else {
+            println!("\nNo solution found. {} moves in {}s", self.moves, self.time.unwrap().as_secs_f64());
+        }
     }
 
     pub fn solve<T: Strategy>(&mut self, strategy: &mut T) -> bool {
@@ -36,10 +38,14 @@ impl KaleidoscopeSolver {
     }
 }
 
+/*
+Backtracking solver returns the first solution it finds
+it searches the tree of possible moves in a depth-first manner
+it can get stuck and explore millions of 'bad' possibliities before finding a solution
+ */
 pub struct BacktrackingSolver {
     pub piece_order: PlayOrder,
     possible: VecDeque<VecDeque<Move>>,   // possible moves for each piece
-    debug: bool
 }
 
 impl BacktrackingSolver {
@@ -47,7 +53,6 @@ impl BacktrackingSolver {
         Self {
             piece_order,
             possible: VecDeque::new(),
-            debug: false
         }
     }
 }
@@ -93,39 +98,33 @@ impl Strategy for BacktrackingSolver {
             let next_piece_idx = self.piece_order[next_move];
             let next_moves = game.possible(next_piece_idx);
             self.possible.push_back(next_moves);
-
-            if self.debug {
-                game.print();
-                println!("{} {} {} {:?}", moves, curr_move, curr_piece_idx, self.possible);
-            }
         }
         false
     }
 }
 
-
-// TODO: review this code
+/*
+Beam search solver returns the first solution it finds
+it searches the tree of possible moves in a breadth-first manner
+ */
+#[derive(Default, Debug)]
 pub struct BeamSearchSolver {
-    pub game: Kaleidoscope,
-    pub moves: u128,
-    pub time: Option<time::Duration>,
+    beam_width: usize,                    // number of possible moves to consider at each level
     possible: VecDeque<VecDeque<Move>>,   // possible moves for each piece
-    debug: bool
 }
 
-// impl BeamSearchSolver {
-//     pub fn new(game: Kaleidoscope, strategy: Strategy) -> Self {
-        
-//         let first_piece_idx = strategy[0];
-//         let mut possible = VecDeque::new();
-//         possible.push_back(game.possible(first_piece_idx));
+impl BeamSearchSolver {
+    pub fn new(beam_width: usize) -> Self {
+        Self {
+            beam_width,
+            possible: VecDeque::new(),
+        }
+    }
+}
 
-//         Self {
-//             game,
-//             strategy,
-//             moves: 0,
-//             time: None,
-//             possible,
-//             debug: false
-//         }
-//     }
+// TODO: implement BeamSearchSolver
+impl Strategy for BeamSearchSolver {
+    fn solve(&mut self, game: &mut Kaleidoscope, moves: &mut u128) -> bool {
+        unimplemented!()
+    }
+}
