@@ -8,12 +8,10 @@ i scraped some of the boards from Mike's Kaleidoscope Classic Page ([page 1](htt
 
 ## Demo
 
-<div style="display:grid; grid-template-columns: 2fr 1fr; gap: 10px">
-    <img src="./frontend/demo.gif">
-    <img src="./src/demo.png" caption="Solver Demo">
-    <div>frontend demo</div>
-    <div>solver demo</div>
-</div>
+<p>
+    <img height="250" src="./frontend/demo.gif">
+    <img height="250" src="./src/demo.png" caption="Solver Demo">
+</p>
 
 ## Running 
 
