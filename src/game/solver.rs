@@ -104,6 +104,46 @@ impl Strategy for BacktrackingSolver {
 }
 
 /*
+Backtracking solver2 returns the first solution it finds
+it searches the tree of possible moves in a depth-first manner
+
+The difference between this and BacktrackingSolver is that this
+implementation goes cell by cell rather than piece by piece
+ */
+pub struct BacktrackingSolver2 {
+    pub piece_order: PlayOrder,
+    used: Vec<bool>,
+    possible: VecDeque<VecDeque<Move>>,   // possible moves for each piece
+}
+
+impl BacktrackingSolver2 {
+    pub fn new(piece_order: PlayOrder) -> Self {
+        Self {
+            piece_order,
+            used: vec![false; 18],
+            possible: VecDeque::new(),
+        }
+    }
+}
+
+impl Strategy for BacktrackingSolver2 {
+
+    fn solve(&mut self, game: &mut Kaleidoscope, moves: &mut u128) -> bool {
+
+        while (!self.possible.is_empty()) {
+
+            for pos in 0..64 {
+                if game.board[pos].is_none() {
+                    
+                }
+            }
+
+        }
+        false
+    }
+}
+
+/*
 Beam search solver returns the first solution it finds
 it searches the tree of possible moves in a breadth-first manner
  */

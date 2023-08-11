@@ -117,6 +117,11 @@ pub struct Move {
     pub col: usize,
     pub config_idx: usize,
 }
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct Move2 {
+    pub piece_idx: usize,
+    pub config_idx: usize,
+}
 #[derive(Clone)]
 pub struct Kaleidoscope {
     pub refboard: [u8; 64],
@@ -470,6 +475,55 @@ impl Kaleidoscope {
                 res.push_back(Move {
                     row: pos_y,
                     col: pos_x,
+                    config_idx,
+                });
+            }
+        }
+        res
+    }
+
+    // given a starting position, returns possible pieces to place at that cell
+    pub fn possible_at_cell(&self, pos: usize, &available: Vec<bool>) -> VecDeque<Move2> {
+        
+        let pos_x = pos % 8;
+        let pos_y = pos / 8;
+
+        let mut res = VecDeque::new();
+
+        for piece_idx in 0..self.pieces.len() {     // for each piece
+
+            let piece = &self.pieces[piece_idx];
+
+            'next_config: for config_idx in 0..piece.configs.len() {     // for each config
+                let config = &piece.configs[config_idx];
+                let dim_1 = usize::from(config.width);
+                let dim_2 = usize::from(config.height);
+
+                for x in 0..dim_1 {
+                    for y in 0..dim_2 {
+
+                        let board_x = pos_x + x;
+                        let board_y = pos_y + y;
+                        // check if piece fits in the board
+                        if board_x >= 8 || board_y >= 8 {
+                            continue 'next_config;
+                        }
+
+                        // check if piece color matches the board
+                        let idx = self.board_idx(board_x, board_y);
+                        let color = piece.get_piece_color(config_idx, x, y);
+                        if color != 0 {                        // non-empty piece color
+                            if self.board[idx].is_some() {     // non-empty board color
+                                continue 'next_config;
+                            }
+                            if color != self.refboard[idx] {   // mismatched board color
+                                continue 'next_config;
+                            }
+                        }
+                    }
+                }
+                res.push_back(Move2 {
+                    piece_idx,
                     config_idx,
                 });
             }
