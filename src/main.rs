@@ -23,6 +23,7 @@ fn main() {
     // backtracking strategy
     let order: PlayOrder = [17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
     let mut backtracking = game::solver::BacktrackingSolver::new(order);
+    // let mut backtracking = game::solver::BacktrackingSolver2::new(order);
     solver.solve(&mut backtracking);
     solver.print();
     

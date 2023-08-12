@@ -115,10 +115,6 @@ impl Piece {
 pub struct Move {
     pub row: usize,
     pub col: usize,
-    pub config_idx: usize,
-}
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct Move2 {
     pub piece_idx: usize,
     pub config_idx: usize,
 }
@@ -349,11 +345,12 @@ impl Kaleidoscope {
     }
 
     // place piece on board (ie. make a move)
-	pub fn set(&mut self, piece_idx: usize, m: Move) {
+	pub fn set(&mut self, m: Move) {
 
         let Move {
             row,
             col,
+            piece_idx,
             config_idx,
         } = m;
 
@@ -428,6 +425,29 @@ impl Kaleidoscope {
 		}
 	}
 
+    // returns frequency of colors, can help to determine easily if a given board is unsolvable
+    pub fn color_freq(&self, freq: &mut [u8; 5]) {
+        for i in 0..64 {
+            freq[self.refboard[i] as usize] += 1;
+        }
+    }
+
+    // returns whether or not board has a checkerboard pattern
+    // if not, certain solvers can do some preprocessing
+    pub fn is_checkerboard(&self) -> bool {
+        for i in 0..8 {
+            for j in 0..8 {
+                let val = self.refboard[self.board_idx(i, j)];
+
+                if i > 0 && val == self.refboard[self.board_idx(i-1, j)] { return false; } // LEFT
+                if i < 7 && val == self.refboard[self.board_idx(i+1, j)] { return false; } // RIGHT
+                if j > 0 && val == self.refboard[self.board_idx(i, j-1)] { return false; } // TOP
+                if j < 7 && val == self.refboard[self.board_idx(i, j+1)] { return false; } // BOTTOM
+            }
+        }
+        true
+    }
+
 	pub fn is_solved(&self) -> bool {
         self.board.iter().all(Option::is_some)
 	}
@@ -475,6 +495,7 @@ impl Kaleidoscope {
                 res.push_back(Move {
                     row: pos_y,
                     col: pos_x,
+                    piece_idx,
                     config_idx,
                 });
             }
@@ -483,14 +504,19 @@ impl Kaleidoscope {
     }
 
     // given a starting position, returns possible pieces to place at that cell
-    pub fn possible_at_cell(&self, pos: usize, &available: Vec<bool>) -> VecDeque<Move2> {
+    pub fn possible_at_cell(&self, pos: usize, piece_order: &PlayOrder, available: &Vec<bool>) -> VecDeque<Move> {
         
         let pos_x = pos % 8;
         let pos_y = pos / 8;
 
         let mut res = VecDeque::new();
 
-        for piece_idx in 0..self.pieces.len() {     // for each piece
+        for i in 0..piece_order.len() {             // for each piece
+
+            let piece_idx = piece_order[i];
+            if !available[piece_idx] {                     // for each AVAILABLE piece (ie. unused)
+                continue;
+            }
 
             let piece = &self.pieces[piece_idx];
 
@@ -522,7 +548,9 @@ impl Kaleidoscope {
                         }
                     }
                 }
-                res.push_back(Move2 {
+                res.push_back(Move {
+                    row: pos_x,
+                    col: pos_y,
                     piece_idx,
                     config_idx,
                 });
