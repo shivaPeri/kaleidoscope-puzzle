@@ -68,7 +68,6 @@ impl Strategy for BacktrackingSolver {
         while !self.possible.is_empty() {
 
             let curr_move = self.possible.len() - 1;
-            let curr_piece_idx = self.piece_order[curr_move];
             
             // if there are no available moves for the current piece
             if self.possible[curr_move].is_empty() {
@@ -85,7 +84,7 @@ impl Strategy for BacktrackingSolver {
 
             // place the first possible current move on the board
             let move_ = self.possible[curr_move].pop_front().unwrap();
-            game.set(curr_piece_idx, move_);
+            game.set(move_);
             *moves += 1;
 
             // exit condition
@@ -112,7 +111,8 @@ implementation goes cell by cell rather than piece by piece
  */
 pub struct BacktrackingSolver2 {
     pub piece_order: PlayOrder,
-    used: Vec<bool>,
+    available: Vec<bool>,
+    last_piece_idx: Option<usize>,
     possible: VecDeque<VecDeque<Move>>,   // possible moves for each piece
 }
 
@@ -120,7 +120,8 @@ impl BacktrackingSolver2 {
     pub fn new(piece_order: PlayOrder) -> Self {
         Self {
             piece_order,
-            used: vec![false; 18],
+            available: vec![true; 18],
+            last_piece_idx: None,
             possible: VecDeque::new(),
         }
     }
@@ -130,12 +131,47 @@ impl Strategy for BacktrackingSolver2 {
 
     fn solve(&mut self, game: &mut Kaleidoscope, moves: &mut u128) -> bool {
 
+        // intialization
+        self.possible.push_back(game.possible_at_cell(0, &self.piece_order, &self.available));
+        // println!("{}", self.possible.len());
+
         while (!self.possible.is_empty()) {
+            let curr_move = self.possible.len() - 1;
+            print!("{:?}", self.possible);
 
             for pos in 0..64 {
-                if game.board[pos].is_none() {
-                    
+                if game.board[pos].is_none() {  // find first empty cell
+
+                    // if there are no available moves for the current piece
+                    if self.possible[curr_move].is_empty() {
+
+                        // undo the last move, if possible
+                        if self.last_piece_idx.is_some() {
+                            game.remove(self.last_piece_idx.unwrap());
+                            self.available[self.last_piece_idx.unwrap()] = true;
+                        }
+
+                        // remove the empty list of moves from the list of possible moves
+                        self.possible.pop_back();
+                        continue;
+                    }
+
+                    // place the first possible current move on the board, mark it as used
+                    let move_ = self.possible[curr_move].pop_front().unwrap();
+                    game.set(move_);
+                    self.available[move_.piece_idx] = false;
+                    self.last_piece_idx = Some(move_.piece_idx);
+                    *moves += 1;
+
+                    // get the next piece's possible moves
+                    let next_moves = game.possible_at_cell(pos, &self.piece_order, &self.available);
+                    self.possible.push_back(next_moves);
+                    break;
                 }
+            }
+            // exit condition
+            if curr_move == self.piece_order.len() - 1 && game.is_solved() {
+                return true;
             }
 
         }
