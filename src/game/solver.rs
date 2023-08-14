@@ -132,18 +132,22 @@ impl Strategy for BacktrackingSolver2 {
     fn solve(&mut self, game: &mut Kaleidoscope, moves: &mut u128) -> bool {
 
         // intialization
-        self.possible.push_back(game.possible_at_cell(0, &self.piece_order, &self.available));
+        // self.possible.push_back(game.possible_at_cell(0, &self.piece_order, &self.available));
         // println!("{}", self.possible.len());
 
-        while (!self.possible.is_empty()) {
-            let curr_move = self.possible.len() - 1;
-            print!("{:?}", self.possible);
+        // while (!self.possible.is_empty()) {
+        while (!game.is_solved()) {
+            
+            // print!("move {} {:?}\n\n", moves, self.possible);
 
             for pos in 0..64 {
                 if game.board[pos].is_none() {  // find first empty cell
 
+                    // populate possible moves
+                    let mut next_moves = game.possible_at_cell(pos, &self.piece_order, &self.available);
+
                     // if there are no available moves for the current piece
-                    if self.possible[curr_move].is_empty() {
+                    if next_moves.is_empty() {
 
                         // undo the last move, if possible
                         if self.last_piece_idx.is_some() {
@@ -151,28 +155,25 @@ impl Strategy for BacktrackingSolver2 {
                             self.available[self.last_piece_idx.unwrap()] = true;
                         }
 
-                        // remove the empty list of moves from the list of possible moves
-                        self.possible.pop_back();
-                        continue;
+                        break;
                     }
 
                     // place the first possible current move on the board, mark it as used
-                    let move_ = self.possible[curr_move].pop_front().unwrap();
+                    let move_ = next_moves.pop_front().unwrap();
+                    self.possible.push_back(next_moves);
                     game.set(move_);
                     self.available[move_.piece_idx] = false;
                     self.last_piece_idx = Some(move_.piece_idx);
                     *moves += 1;
 
                     // get the next piece's possible moves
-                    let next_moves = game.possible_at_cell(pos, &self.piece_order, &self.available);
-                    self.possible.push_back(next_moves);
                     break;
                 }
             }
-            // exit condition
-            if curr_move == self.piece_order.len() - 1 && game.is_solved() {
-                return true;
-            }
+            // // exit condition
+            // if curr_move == self.piece_order.len() - 1 && game.is_solved() {
+            //     return true;
+            // }
 
         }
         false

@@ -11,6 +11,7 @@ struct Args {
 
 fn main() {
 
+    // let x = game::Kaleidoscope::new(Path::new("boards/boards.json"), "classic");
     // let x = game::Kaleidoscope::new(Path::new("boards/boards.json"), "sun-shower");
 	// let x = game::Kaleidoscope::new(Path::new("boards/scraped-boards.json"), "australian-emu");
 
