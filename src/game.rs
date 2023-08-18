@@ -9,44 +9,85 @@ use std::path::Path;
 use std::{fs, str::FromStr};
 use termion::color;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum PieceColor {
-    Empty,
-    Black,
-    Red,
-    Yellow,
-    Blue,
-}
-
-impl PieceColor {
-    pub fn from_u8(value: u8) -> Self {
-        match value {
-            1 => Self::Black,
-            2 => Self::Red,
-            3 => Self::Yellow,
-            4 => Self::Blue,
-            _ => Self::Empty,
-        }
-    }
-}
-
-impl std::fmt::Display for PieceColor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Black => write!(f, "{}■ ", color::Fg(color::White)),
-            Self::Red => write!(f, "{}■ ", color::Fg(color::Red)),
-            Self::Yellow => write!(f, "{}■ ", color::Fg(color::Yellow)),
-            Self::Blue => write!(f, "{}■ ", color::Fg(color::Blue)),
-            _ => write!(f, "{}□ ", color::Fg(color::Reset)),
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug)]
-struct Data(HashMap<String, String>);
+struct Json(HashMap<String, String>);
 
-// ordering of 18 pieces to place
-pub type PlayOrder = [usize; 18];
+/* ********************************************************* INTERFACE/TRAITS */
+
+pub trait Kaleidoscope {
+    type Piece;
+    type Move;
+
+    fn new(path: &Path, board_name: &str) -> Self;
+    fn solved(&self) -> bool;
+    // fn is_checkerboard(&self) -> bool;
+    // fn solvable(&self) -> bool;
+    fn print(&self);
+    fn print_ref(&self);
+
+    fn play(&self, piece: Self::Move);
+    fn undo(&self, piece: Self::Piece);
+    fn possible(&self, piece: Self::Piece) -> Vec<Move>;
+}
+
+pub trait Solver<T>
+where
+    T: Kaleidoscope,
+{
+    type Strategy;
+    type Solution;
+
+    fn solve(&self, strategy: Self::Strategy) -> bool;
+    fn print(&self);
+}
+
+/* ********************************************************* BitRepresentation Implementation */
+// new implementation using bitmasks
+// expectation is that this should perform better
+
+pub struct BitRepresentation {
+    pub board: u128,    // game board
+    pub refboard: u128, // reference board
+}
+
+impl Kaleidoscope for BitRepresentation {
+    type Piece = u128;
+    type Move = usize;
+
+    fn new(path: &Path, board_name: &str) -> Self {
+        let file = fs::read_to_string(path).expect("Unable to read file");
+        let data: Json = serde_json::from_str(&file).expect("Unable to parse json");
+        let board_str = data.0.get(board_name).unwrap();
+
+        Self {
+            board: 0,
+            refboard: u128::from_str_radix(board_str, 2).unwrap(),
+        }
+    }
+
+    fn solved(&self) -> bool {
+        self.board == u128::MAX
+    }
+
+    fn print(&self) {}
+    fn print_ref(&self) {}
+
+    fn play(&self, piece: Self::Move) {}
+
+    fn undo(&self, piece: Self::Piece) {}
+
+    fn possible(&self, piece: Self::Piece) {}
+}
+
+/* ********************************************************* Vector<u8> Implementation */
+// old implementation
+
+#[derive(Clone)]
+pub struct VectorRepresentation {
+    pub refboard: [u8; 64],
+    pub board: [Option<u8>; 64], // piece_idx
+    pub pieces: Vec<Piece>,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PieceConfig {
@@ -85,25 +126,6 @@ impl Piece {
         let idx: usize = y * piece.height as usize + x;
         piece.config[idx].unwrap()
     }
-
-    pub fn print(&self, config_idx: usize, row: usize, col: usize) {
-        println!("----------------");
-        let piece = &self.configs[config_idx];
-        let width = usize::from(piece.width);
-        let height = usize::from(piece.height);
-
-        for i in 0..8 {
-            for j in 0..8 {
-                if i >= row && i < row + width && j >= col && j < col + height {
-                    let color = self.get_piece_color(config_idx, i - row, j - col);
-                    print!("{}", PieceColor::from_u8(color));
-                } else {
-                    print!("{}", PieceColor::from_u8(0));
-                }
-            }
-            println!();
-        }
-    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -113,33 +135,10 @@ pub struct Move {
     pub piece_idx: usize,
     pub config_idx: usize,
 }
-#[derive(Clone)]
-pub struct Kaleidoscope {
-    pub refboard: [u8; 64],
-    pub board: [Option<u8>; 64], // piece_idx
-    pub pieces: Vec<Piece>,
-}
 
-impl Kaleidoscope {
-    // Create a new game board from a string.
-    pub fn new(path: &Path, name: &str) -> Self {
-        let file = fs::read_to_string(path).expect("Unable to read file");
-        let data: Data = serde_json::from_str(&file).expect("Unable to parse json");
-        let board_str = String::from_str(data.0.get(name).unwrap()).unwrap();
-        let refboard: Vec<u8> = board_str
-            .chars()
-            .map(|c| c.to_digit(10).unwrap() as u8)
-            .collect();
-        let refboard: [u8; 64] = refboard.try_into().unwrap();
-
-        Self {
-            board: [None; 64],
-            refboard,
-            pieces: Self::load_pieces(),
-        }
-    }
-
-    fn load_piece_configs() -> Vec<Vec<PieceConfig>> {
+// additional methods needed for VectorRepresentation struct
+impl VectorRepresentation {
+    pub fn load_piece_configs() -> Vec<Vec<PieceConfig>> {
         let mono_1: Vec<PieceConfig> =
             vec![PieceConfig::new(1, 1, &[2]), PieceConfig::new(1, 1, &[1])];
 
@@ -333,12 +332,74 @@ impl Kaleidoscope {
     }
 
     // maps 2d coordinates to 1d index
-    fn board_idx(&self, x: usize, y: usize) -> usize {
+    pub fn board_idx(&self, x: usize, y: usize) -> usize {
         return x * 8 + y;
+    }
+}
+
+impl Kaleidoscope for VectorRepresentation {
+    // Create a new game board from a string.
+    fn new(path: &Path, name: &str) -> Self {
+        let file = fs::read_to_string(path).expect("Unable to read file");
+        let data: Json = serde_json::from_str(&file).expect("Unable to parse json");
+        let board_str = String::from_str(data.0.get(name).unwrap()).unwrap();
+        let refboard: Vec<u8> = board_str
+            .chars()
+            .map(|c| c.to_digit(10).unwrap() as u8)
+            .collect();
+        let refboard: [u8; 64] = refboard.try_into().unwrap();
+
+        Self {
+            board: [None; 64],
+            refboard,
+            pieces: Self::load_pieces(),
+        }
+    }
+
+    fn solved(&self) -> bool {
+        self.board.iter().all(Option::is_some)
+    }
+
+    fn print(&self) {
+        println!("---------------- BOARD");
+        for x in 0..8 {
+            for y in 0..8 {
+                let idx = self.board_idx(x, y);
+                let val = match self.board[idx] {
+                    Some(piece) => String::from_utf8(vec![(17 - piece) + 65]).unwrap(),
+                    None => " ".to_string(),
+                };
+                match self.refboard[idx] {
+                    1 => print!("{}{} ", color::Fg(color::White), val),
+                    2 => print!("{}{} ", color::Fg(color::Red), val),
+                    3 => print!("{}{} ", color::Fg(color::Yellow), val),
+                    4 => print!("{}{} ", color::Fg(color::Blue), val),
+                    _ => print!("{}{} ", color::Fg(color::Reset), val),
+                };
+            }
+            println!();
+        }
+    }
+
+    fn print_ref(&self) {
+        println!("---------------- REFERENCE");
+        for x in 0..8 {
+            for y in 0..8 {
+                let idx = self.board_idx(x, y);
+                match self.refboard[idx] {
+                    1 => print!("{}□ ", color::Fg(color::White)),
+                    2 => print!("{}■ ", color::Fg(color::Red)),
+                    3 => print!("{}■ ", color::Fg(color::Yellow)),
+                    4 => print!("{}■ ", color::Fg(color::Blue)),
+                    _ => print!("{}■ ", color::Fg(color::Reset)),
+                };
+            }
+            println!();
+        }
     }
 
     // place piece on board (ie. make a move)
-    pub fn set(&mut self, m: Move) {
+    fn play(&mut self, m: Move) {
         let Move {
             row,
             col,
@@ -363,7 +424,7 @@ impl Kaleidoscope {
     }
 
     // remove piece on board (ie. undo a move)
-    pub fn remove(&mut self, piece_idx: usize) {
+    fn undo(&mut self, piece_idx: usize) {
         for x in 0..8 {
             for y in 0..8 {
                 let idx = self.board_idx(x, y);
@@ -379,81 +440,8 @@ impl Kaleidoscope {
         }
     }
 
-    pub fn print(&self) {
-        println!("----------------");
-        for x in 0..8 {
-            for y in 0..8 {
-                let idx = self.board_idx(x, y);
-                let val = match self.board[idx] {
-                    Some(piece) => String::from_utf8(vec![(17 - piece) + 65]).unwrap(),
-                    None => " ".to_string(),
-                };
-                match self.refboard[idx] {
-                    1 => print!("{}{} ", color::Fg(color::White), val),
-                    2 => print!("{}{} ", color::Fg(color::Red), val),
-                    3 => print!("{}{} ", color::Fg(color::Yellow), val),
-                    4 => print!("{}{} ", color::Fg(color::Blue), val),
-                    _ => print!("{}{} ", color::Fg(color::Reset), val),
-                };
-            }
-            println!();
-        }
-    }
-
-    pub fn print_ref(&self) {
-        println!("----------------");
-        for x in 0..8 {
-            for y in 0..8 {
-                let idx = self.board_idx(x, y);
-                match self.refboard[idx] {
-                    1 => print!("{}□ ", color::Fg(color::White)),
-                    2 => print!("{}■ ", color::Fg(color::Red)),
-                    3 => print!("{}■ ", color::Fg(color::Yellow)),
-                    4 => print!("{}■ ", color::Fg(color::Blue)),
-                    _ => print!("{}■ ", color::Fg(color::Reset)),
-                };
-            }
-            println!();
-        }
-    }
-
-    // returns frequency of colors, can help to determine easily if a given board is unsolvable
-    pub fn color_freq(&self, freq: &mut [u8; 5]) {
-        for i in 0..64 {
-            freq[self.refboard[i] as usize] += 1;
-        }
-    }
-
-    // returns whether or not board has a checkerboard pattern
-    // if not, certain solvers can do some preprocessing
-    pub fn is_checkerboard(&self) -> bool {
-        for i in 0..8 {
-            for j in 0..8 {
-                let val = self.refboard[self.board_idx(i, j)];
-
-                if i > 0 && val == self.refboard[self.board_idx(i - 1, j)] {
-                    return false;
-                } // LEFT
-                if i < 7 && val == self.refboard[self.board_idx(i + 1, j)] {
-                    return false;
-                } // RIGHT
-                if j > 0 && val == self.refboard[self.board_idx(i, j - 1)] {
-                    return false;
-                } // TOP
-                if j < 7 && val == self.refboard[self.board_idx(i, j + 1)] {
-                    return false;
-                } // BOTTOM
-            }
-        }
-        true
-    }
-
-    pub fn is_solved(&self) -> bool {
-        self.board.iter().all(Option::is_some)
-    }
-
     // Given a piece, returns a vector of possible placements and configurations.
-    pub fn possible(&self, piece_idx: usize) -> VecDeque<Move> {
+    fn possible(&self, piece_idx: usize) -> VecDeque<Move> {
         let piece = &self.pieces[piece_idx];
 
         let mut res = VecDeque::new();
@@ -505,69 +493,40 @@ impl Kaleidoscope {
         }
         res
     }
+}
 
-    // given a starting position, returns possible pieces to place at that cell
-    pub fn possible_at_cell(
-        &self,
-        pos: usize,
-        piece_order: &PlayOrder,
-        available: &Vec<bool>,
-    ) -> VecDeque<Move> {
-        let pos_x = pos % 8;
-        let pos_y = pos / 8;
+/* ********************************************************* Formating Types */
+// These are share types for printing to terminal in color
 
-        let mut res = VecDeque::new();
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum PieceColor {
+    Empty,
+    Black,
+    Red,
+    Yellow,
+    Blue,
+}
 
-        for i in 0..piece_order.len() {
-            // for each piece
-
-            let piece_idx = piece_order[i];
-            if !available[piece_idx] {
-                // for each AVAILABLE piece (ie. unused)
-                continue;
-            }
-
-            let piece = &self.pieces[piece_idx];
-
-            'next_config: for config_idx in 0..piece.configs.len() {
-                // for each config
-                let config = &piece.configs[config_idx];
-                let dim_1 = usize::from(config.width);
-                let dim_2 = usize::from(config.height);
-
-                for x in 0..dim_1 {
-                    for y in 0..dim_2 {
-                        let board_x = pos_x + x;
-                        let board_y = pos_y + y;
-                        // check if piece fits in the board
-                        if board_x >= 8 || board_y >= 8 {
-                            continue 'next_config;
-                        }
-
-                        // check if piece color matches the board
-                        let idx = self.board_idx(board_x, board_y);
-                        let color = piece.get_piece_color(config_idx, x, y);
-                        if color != 0 {
-                            // non-empty piece color
-                            if self.board[idx].is_some() {
-                                // non-empty board color
-                                continue 'next_config;
-                            }
-                            if color != self.refboard[idx] {
-                                // mismatched board color
-                                continue 'next_config;
-                            }
-                        }
-                    }
-                }
-                res.push_back(Move {
-                    row: pos_x,
-                    col: pos_y,
-                    piece_idx,
-                    config_idx,
-                });
-            }
+impl PieceColor {
+    pub fn from_u8(value: u8) -> Self {
+        match value {
+            1 => Self::Black,
+            2 => Self::Red,
+            3 => Self::Yellow,
+            4 => Self::Blue,
+            _ => Self::Empty,
         }
-        res
+    }
+}
+
+impl std::fmt::Display for PieceColor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Black => write!(f, "{}■ ", color::Fg(color::White)),
+            Self::Red => write!(f, "{}■ ", color::Fg(color::Red)),
+            Self::Yellow => write!(f, "{}■ ", color::Fg(color::Yellow)),
+            Self::Blue => write!(f, "{}■ ", color::Fg(color::Blue)),
+            _ => write!(f, "{}□ ", color::Fg(color::Reset)),
+        }
     }
 }
