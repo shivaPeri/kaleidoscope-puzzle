@@ -191,6 +191,14 @@ def int2TwoBits(x: int) -> str:
     if x == 4: return "11"
     return "00"
 
+def encode2Ascii(s: str) -> str:
+    res = ""
+    assert len(s) // 16 == 8 or len(s) // 16 == 4
+    for i in range(len(s) // 16):
+        sub = s[8*i:8*(i+1)]
+        res = chr(int(sub,2)) + res
+    return res
+
 class Board():
     def __init__(self) -> None:
         self.board = [ [0]*8 for i in range(8) ]
@@ -240,6 +248,10 @@ class Board():
                     mask64 = self.getMask64()
                     mask128 = self.getMask128()
                     pattern = self.getBitpattern128()
+
+                    # binary_integer = int(mask64, 2)
+                    # hex_string = format(binary_integer, '032x')
+                    # print("{}\t{}\n".format(binary_integer, hex_string))
 
                     fd.write("{},{}\n".format(mask64, pattern))
                     self.clear()
