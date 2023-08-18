@@ -1,13 +1,13 @@
-pub mod solver;
 pub mod generator;
+pub mod solver;
 
+use bitvec::prelude::*;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::collections::VecDeque;
 use std::path::Path;
 use std::{fs, str::FromStr};
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
 use termion::color;
-use std::collections::VecDeque;
-use bitvec::prelude::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum PieceColor {
@@ -76,12 +76,8 @@ pub struct Piece {
 }
 
 impl Piece {
-
     pub fn new(idx: usize, configs: Vec<PieceConfig>) -> Self {
-        Piece {
-            idx,
-            configs,
-        }
+        Piece { idx, configs }
     }
 
     pub fn get_piece_color(&self, config_idx: usize, y: usize, x: usize) -> u8 {
@@ -91,7 +87,6 @@ impl Piece {
     }
 
     pub fn print(&self, config_idx: usize, row: usize, col: usize) {
-
         println!("----------------");
         let piece = &self.configs[config_idx];
         let width = usize::from(piece.width);
@@ -100,7 +95,7 @@ impl Piece {
         for i in 0..8 {
             for j in 0..8 {
                 if i >= row && i < row + width && j >= col && j < col + height {
-                    let color = self.get_piece_color(config_idx, i-row, j-col);
+                    let color = self.get_piece_color(config_idx, i - row, j - col);
                     print!("{}", PieceColor::from_u8(color));
                 } else {
                     print!("{}", PieceColor::from_u8(0));
@@ -110,7 +105,6 @@ impl Piece {
         }
     }
 }
-
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Move {
@@ -122,22 +116,23 @@ pub struct Move {
 #[derive(Clone)]
 pub struct Kaleidoscope {
     pub refboard: [u8; 64],
-	pub board: [Option<u8>; 64],   // piece_idx
+    pub board: [Option<u8>; 64], // piece_idx
     pub pieces: Vec<Piece>,
 }
 
 impl Kaleidoscope {
-
     // Create a new game board from a string.
     pub fn new(path: &Path, name: &str) -> Self {
-
         let file = fs::read_to_string(path).expect("Unable to read file");
         let data: Data = serde_json::from_str(&file).expect("Unable to parse json");
         let board_str = String::from_str(data.0.get(name).unwrap()).unwrap();
-        let refboard: Vec<u8> = board_str.chars().map(|c| c.to_digit(10).unwrap() as u8).collect();
+        let refboard: Vec<u8> = board_str
+            .chars()
+            .map(|c| c.to_digit(10).unwrap() as u8)
+            .collect();
         let refboard: [u8; 64] = refboard.try_into().unwrap();
 
-        Self { 
+        Self {
             board: [None; 64],
             refboard,
             pieces: Self::load_pieces(),
@@ -145,198 +140,195 @@ impl Kaleidoscope {
     }
 
     fn load_piece_configs() -> Vec<Vec<PieceConfig>> {
+        let mono_1: Vec<PieceConfig> =
+            vec![PieceConfig::new(1, 1, &[2]), PieceConfig::new(1, 1, &[1])];
 
-        let mono_1: Vec<PieceConfig> = vec![
-            PieceConfig::new(1,1, &[2]),
-            PieceConfig::new(1,1, &[1]),
-        ];
-    
-        let mono_2: Vec<PieceConfig> = vec![
-            PieceConfig::new(1,1, &[4]),
-            PieceConfig::new(1,1, &[1]),
-        ];
-    
+        let mono_2: Vec<PieceConfig> =
+            vec![PieceConfig::new(1, 1, &[4]), PieceConfig::new(1, 1, &[1])];
+
         let domo_1: Vec<PieceConfig> = vec![
-            PieceConfig::new(1,2, &[2,1]),
-            PieceConfig::new(1,2, &[1,2]),
-            PieceConfig::new(1,2, &[4,1]),
-            PieceConfig::new(1,2, &[1,4]),
-            PieceConfig::new(2,1, &[2,1]),
-            PieceConfig::new(2,1, &[1,2]),
-            PieceConfig::new(2,1, &[4,1]),
-            PieceConfig::new(2,1, &[1,4]),
+            PieceConfig::new(1, 2, &[2, 1]),
+            PieceConfig::new(1, 2, &[1, 2]),
+            PieceConfig::new(1, 2, &[4, 1]),
+            PieceConfig::new(1, 2, &[1, 4]),
+            PieceConfig::new(2, 1, &[2, 1]),
+            PieceConfig::new(2, 1, &[1, 2]),
+            PieceConfig::new(2, 1, &[4, 1]),
+            PieceConfig::new(2, 1, &[1, 4]),
         ];
-    
+
         let trom_1: Vec<PieceConfig> = vec![
-            PieceConfig::new(1,3, &[2,1,2]),
-            PieceConfig::new(1,3, &[3,1,4]),
-            PieceConfig::new(1,3, &[4,1,3]),
-            PieceConfig::new(3,1, &[2,1,2]),
-            PieceConfig::new(3,1, &[3,1,4]),
-            PieceConfig::new(3,1, &[4,1,3]),
+            PieceConfig::new(1, 3, &[2, 1, 2]),
+            PieceConfig::new(1, 3, &[3, 1, 4]),
+            PieceConfig::new(1, 3, &[4, 1, 3]),
+            PieceConfig::new(3, 1, &[2, 1, 2]),
+            PieceConfig::new(3, 1, &[3, 1, 4]),
+            PieceConfig::new(3, 1, &[4, 1, 3]),
         ];
-    
+
         let trom_2: Vec<PieceConfig> = vec![
-            PieceConfig::new(1,3, &[1,2,1]),
-            PieceConfig::new(1,3, &[1,3,1]),
-            PieceConfig::new(3,1, &[1,2,1]),
-            PieceConfig::new(3,1, &[1,3,1]),
+            PieceConfig::new(1, 3, &[1, 2, 1]),
+            PieceConfig::new(1, 3, &[1, 3, 1]),
+            PieceConfig::new(3, 1, &[1, 2, 1]),
+            PieceConfig::new(3, 1, &[1, 3, 1]),
         ];
-    
+
         let trom_3: Vec<PieceConfig> = vec![
-            PieceConfig::new(2,2, &[0,1,1,2]),
-            PieceConfig::new(2,2, &[1,0,2,1]),
-            PieceConfig::new(2,2, &[1,2,0,1]),
-            PieceConfig::new(2,2, &[2,1,1,0]),
-            PieceConfig::new(2,2, &[0,1,1,3]),
-            PieceConfig::new(2,2, &[1,0,3,1]),
-            PieceConfig::new(2,2, &[1,3,0,1]),
-            PieceConfig::new(2,2, &[3,1,1,0]),
+            PieceConfig::new(2, 2, &[0, 1, 1, 2]),
+            PieceConfig::new(2, 2, &[1, 0, 2, 1]),
+            PieceConfig::new(2, 2, &[1, 2, 0, 1]),
+            PieceConfig::new(2, 2, &[2, 1, 1, 0]),
+            PieceConfig::new(2, 2, &[0, 1, 1, 3]),
+            PieceConfig::new(2, 2, &[1, 0, 3, 1]),
+            PieceConfig::new(2, 2, &[1, 3, 0, 1]),
+            PieceConfig::new(2, 2, &[3, 1, 1, 0]),
         ];
-    
+
         let trom_4: Vec<PieceConfig> = vec![
-            PieceConfig::new(2,2, &[0,2,2,1]),
-            PieceConfig::new(2,2, &[2,0,1,2]),
-            PieceConfig::new(2,2, &[2,1,0,2]),
-            PieceConfig::new(2,2, &[1,2,2,0]),
-            PieceConfig::new(2,2, &[0,4,3,1]),
-            PieceConfig::new(2,2, &[3,0,1,4]),
-            PieceConfig::new(2,2, &[4,1,0,3]),
-            PieceConfig::new(2,2, &[1,3,4,0]),
+            PieceConfig::new(2, 2, &[0, 2, 2, 1]),
+            PieceConfig::new(2, 2, &[2, 0, 1, 2]),
+            PieceConfig::new(2, 2, &[2, 1, 0, 2]),
+            PieceConfig::new(2, 2, &[1, 2, 2, 0]),
+            PieceConfig::new(2, 2, &[0, 4, 3, 1]),
+            PieceConfig::new(2, 2, &[3, 0, 1, 4]),
+            PieceConfig::new(2, 2, &[4, 1, 0, 3]),
+            PieceConfig::new(2, 2, &[1, 3, 4, 0]),
         ];
-    
+
         let tetr_1: Vec<PieceConfig> = vec![
-            PieceConfig::new(1,4, &[2,1,2,1]),
-            PieceConfig::new(1,4, &[1,2,1,2]),
-            PieceConfig::new(1,4, &[4,1,3,1]),
-            PieceConfig::new(1,4, &[1,3,1,4]),
-            PieceConfig::new(4,1, &[2,1,2,1]),
-            PieceConfig::new(4,1, &[1,2,1,2]),
-            PieceConfig::new(4,1, &[4,1,3,1]),
-            PieceConfig::new(4,1, &[1,3,1,4]),
+            PieceConfig::new(1, 4, &[2, 1, 2, 1]),
+            PieceConfig::new(1, 4, &[1, 2, 1, 2]),
+            PieceConfig::new(1, 4, &[4, 1, 3, 1]),
+            PieceConfig::new(1, 4, &[1, 3, 1, 4]),
+            PieceConfig::new(4, 1, &[2, 1, 2, 1]),
+            PieceConfig::new(4, 1, &[1, 2, 1, 2]),
+            PieceConfig::new(4, 1, &[4, 1, 3, 1]),
+            PieceConfig::new(4, 1, &[1, 3, 1, 4]),
         ];
-    
+
         let tetr_2: Vec<PieceConfig> = vec![
-            PieceConfig::new(2,2, &[2,1,1,2]),
-            PieceConfig::new(2,2, &[1,2,2,1]),
-            PieceConfig::new(2,2, &[4,1,1,3]),
-            PieceConfig::new(2,2, &[3,1,1,4]),
-            PieceConfig::new(2,2, &[1,3,4,1]),
-            PieceConfig::new(2,2, &[1,4,3,1]),
+            PieceConfig::new(2, 2, &[2, 1, 1, 2]),
+            PieceConfig::new(2, 2, &[1, 2, 2, 1]),
+            PieceConfig::new(2, 2, &[4, 1, 1, 3]),
+            PieceConfig::new(2, 2, &[3, 1, 1, 4]),
+            PieceConfig::new(2, 2, &[1, 3, 4, 1]),
+            PieceConfig::new(2, 2, &[1, 4, 3, 1]),
         ];
-    
+
         let tetr_3: Vec<PieceConfig> = vec![
-            PieceConfig::new(2,3, &[0,0,2,1,2,1]),
-            PieceConfig::new(3,2, &[2,1,0,2,0,1]),
-            PieceConfig::new(2,3, &[1,2,1,2,0,0]),
-            PieceConfig::new(3,2, &[1,0,2,0,1,2]),
-            PieceConfig::new(2,3, &[1,0,0,3,1,4]),
-            PieceConfig::new(3,2, &[3,1,1,0,4,0]),
-            PieceConfig::new(2,3, &[4,1,3,0,0,1]),
-            PieceConfig::new(3,2, &[0,4,0,1,1,3]),
+            PieceConfig::new(2, 3, &[0, 0, 2, 1, 2, 1]),
+            PieceConfig::new(3, 2, &[2, 1, 0, 2, 0, 1]),
+            PieceConfig::new(2, 3, &[1, 2, 1, 2, 0, 0]),
+            PieceConfig::new(3, 2, &[1, 0, 2, 0, 1, 2]),
+            PieceConfig::new(2, 3, &[1, 0, 0, 3, 1, 4]),
+            PieceConfig::new(3, 2, &[3, 1, 1, 0, 4, 0]),
+            PieceConfig::new(2, 3, &[4, 1, 3, 0, 0, 1]),
+            PieceConfig::new(3, 2, &[0, 4, 0, 1, 1, 3]),
         ];
-    
+
         let tetr_4: Vec<PieceConfig> = vec![
-            PieceConfig::new(2,3, &[2,0,0,1,2,1]),
-            PieceConfig::new(3,2, &[1,2,2,0,1,0]),
-            PieceConfig::new(2,3, &[1,2,1,0,0,2]),
-            PieceConfig::new(3,2, &[0,1,0,2,2,1]),
-            PieceConfig::new(2,3, &[0,0,3,1,4,1]),
-            PieceConfig::new(3,2, &[3,1,0,4,0,1]),
-            PieceConfig::new(2,3, &[1,4,1,3,0,0]),
-            PieceConfig::new(3,2, &[1,0,4,0,1,3]),
+            PieceConfig::new(2, 3, &[2, 0, 0, 1, 2, 1]),
+            PieceConfig::new(3, 2, &[1, 2, 2, 0, 1, 0]),
+            PieceConfig::new(2, 3, &[1, 2, 1, 0, 0, 2]),
+            PieceConfig::new(3, 2, &[0, 1, 0, 2, 2, 1]),
+            PieceConfig::new(2, 3, &[0, 0, 3, 1, 4, 1]),
+            PieceConfig::new(3, 2, &[3, 1, 0, 4, 0, 1]),
+            PieceConfig::new(2, 3, &[1, 4, 1, 3, 0, 0]),
+            PieceConfig::new(3, 2, &[1, 0, 4, 0, 1, 3]),
         ];
-    
+
         let tetr_5: Vec<PieceConfig> = vec![
-            PieceConfig::new(2,3, &[0,0,1,2,1,2]),
-            PieceConfig::new(3,2, &[1,2,0,1,0,2]),
-            PieceConfig::new(2,3, &[2,1,2,1,0,0]),
-            PieceConfig::new(3,2, &[2,0,1,0,2,1]),
-            PieceConfig::new(2,3, &[1,0,0,4,1,3]),
-            PieceConfig::new(3,2, &[4,1,1,0,3,0]),
-            PieceConfig::new(2,3, &[3,1,4,0,0,1]),
-            PieceConfig::new(3,2, &[0,3,0,1,1,4]),
+            PieceConfig::new(2, 3, &[0, 0, 1, 2, 1, 2]),
+            PieceConfig::new(3, 2, &[1, 2, 0, 1, 0, 2]),
+            PieceConfig::new(2, 3, &[2, 1, 2, 1, 0, 0]),
+            PieceConfig::new(3, 2, &[2, 0, 1, 0, 2, 1]),
+            PieceConfig::new(2, 3, &[1, 0, 0, 4, 1, 3]),
+            PieceConfig::new(3, 2, &[4, 1, 1, 0, 3, 0]),
+            PieceConfig::new(2, 3, &[3, 1, 4, 0, 0, 1]),
+            PieceConfig::new(3, 2, &[0, 3, 0, 1, 1, 4]),
         ];
-    
-    
+
         let tetr_6: Vec<PieceConfig> = vec![
-            PieceConfig::new(2,3, &[1,0,0,2,1,2]),
-            PieceConfig::new(3,2, &[2,1,1,0,2,0]),
-            PieceConfig::new(2,3, &[2,1,2,0,0,1]),
-            PieceConfig::new(3,2, &[0,2,0,1,1,2]),
-            PieceConfig::new(2,3, &[0,0,4,1,3,1]),
-            PieceConfig::new(3,2, &[4,1,0,3,0,1]),
-            PieceConfig::new(2,3, &[1,3,1,4,0,0]),
-            PieceConfig::new(3,2, &[1,0,3,0,1,4]),
+            PieceConfig::new(2, 3, &[1, 0, 0, 2, 1, 2]),
+            PieceConfig::new(3, 2, &[2, 1, 1, 0, 2, 0]),
+            PieceConfig::new(2, 3, &[2, 1, 2, 0, 0, 1]),
+            PieceConfig::new(3, 2, &[0, 2, 0, 1, 1, 2]),
+            PieceConfig::new(2, 3, &[0, 0, 4, 1, 3, 1]),
+            PieceConfig::new(3, 2, &[4, 1, 0, 3, 0, 1]),
+            PieceConfig::new(2, 3, &[1, 3, 1, 4, 0, 0]),
+            PieceConfig::new(3, 2, &[1, 0, 3, 0, 1, 4]),
         ];
-    
+
         let tetr_7: Vec<PieceConfig> = vec![
-            PieceConfig::new(2,3, &[0,1,0,1,2,1]),
-            PieceConfig::new(3,2, &[1,0,2,1,1,0]),
-            PieceConfig::new(2,3, &[1,2,1,0,1,0]),
-            PieceConfig::new(3,2, &[0,1,1,2,0,1]),
-            PieceConfig::new(2,3, &[0,3,0,4,1,3]),
-            PieceConfig::new(3,2, &[4,0,1,3,3,0]),
-            PieceConfig::new(2,3, &[3,1,4,0,3,0]),
-            PieceConfig::new(3,2, &[0,3,3,1,0,4]),
+            PieceConfig::new(2, 3, &[0, 1, 0, 1, 2, 1]),
+            PieceConfig::new(3, 2, &[1, 0, 2, 1, 1, 0]),
+            PieceConfig::new(2, 3, &[1, 2, 1, 0, 1, 0]),
+            PieceConfig::new(3, 2, &[0, 1, 1, 2, 0, 1]),
+            PieceConfig::new(2, 3, &[0, 3, 0, 4, 1, 3]),
+            PieceConfig::new(3, 2, &[4, 0, 1, 3, 3, 0]),
+            PieceConfig::new(2, 3, &[3, 1, 4, 0, 3, 0]),
+            PieceConfig::new(3, 2, &[0, 3, 3, 1, 0, 4]),
         ];
-    
+
         let tetr_8: Vec<PieceConfig> = vec![
-            PieceConfig::new(2,3, &[0,2,0,2,1,2]),
-            PieceConfig::new(3,2, &[2,0,1,2,2,0]),
-            PieceConfig::new(2,3, &[2,1,2,0,2,0]),
-            PieceConfig::new(3,2, &[0,2,2,1,0,2]),
-            PieceConfig::new(2,3, &[0,1,0,1,4,1]),
-            PieceConfig::new(3,2, &[1,0,4,1,1,0]),
-            PieceConfig::new(2,3, &[1,4,1,0,1,0]),
-            PieceConfig::new(3,2, &[0,1,1,4,0,1]),
+            PieceConfig::new(2, 3, &[0, 2, 0, 2, 1, 2]),
+            PieceConfig::new(3, 2, &[2, 0, 1, 2, 2, 0]),
+            PieceConfig::new(2, 3, &[2, 1, 2, 0, 2, 0]),
+            PieceConfig::new(3, 2, &[0, 2, 2, 1, 0, 2]),
+            PieceConfig::new(2, 3, &[0, 1, 0, 1, 4, 1]),
+            PieceConfig::new(3, 2, &[1, 0, 4, 1, 1, 0]),
+            PieceConfig::new(2, 3, &[1, 4, 1, 0, 1, 0]),
+            PieceConfig::new(3, 2, &[0, 1, 1, 4, 0, 1]),
         ];
-    
+
         let tetr_9: Vec<PieceConfig> = vec![
-            PieceConfig::new(2,3, &[0,1,2,1,2,0]),
-            PieceConfig::new(3,2, &[2,0,1,2,0,1]),
-            PieceConfig::new(2,3, &[0,2,1,2,1,0]),
-            PieceConfig::new(3,2, &[1,0,2,1,0,2]),
-            PieceConfig::new(2,3, &[1,4,0,0,1,3]),
-            PieceConfig::new(3,2, &[0,1,1,4,3,0]),
-            PieceConfig::new(2,3, &[3,1,0,0,4,1]),
-            PieceConfig::new(3,2, &[0,3,4,1,1,0]),
+            PieceConfig::new(2, 3, &[0, 1, 2, 1, 2, 0]),
+            PieceConfig::new(3, 2, &[2, 0, 1, 2, 0, 1]),
+            PieceConfig::new(2, 3, &[0, 2, 1, 2, 1, 0]),
+            PieceConfig::new(3, 2, &[1, 0, 2, 1, 0, 2]),
+            PieceConfig::new(2, 3, &[1, 4, 0, 0, 1, 3]),
+            PieceConfig::new(3, 2, &[0, 1, 1, 4, 3, 0]),
+            PieceConfig::new(2, 3, &[3, 1, 0, 0, 4, 1]),
+            PieceConfig::new(3, 2, &[0, 3, 4, 1, 1, 0]),
         ];
-    
+
         let tetr_10: Vec<PieceConfig> = vec![
-            PieceConfig::new(2,3, &[1,2,0,0,1,2]),
-            PieceConfig::new(3,2, &[0,1,1,2,2,0]),
-            PieceConfig::new(2,3, &[2,1,0,0,2,1]),
-            PieceConfig::new(3,2, &[0,2,2,1,1,0]),
-            PieceConfig::new(2,3, &[0,3,1,4,1,0]),
-            PieceConfig::new(3,2, &[4,0,1,3,0,1]),
-            PieceConfig::new(2,3, &[0,1,4,1,3,0]),
-            PieceConfig::new(3,2, &[1,0,3,1,0,4]),
+            PieceConfig::new(2, 3, &[1, 2, 0, 0, 1, 2]),
+            PieceConfig::new(3, 2, &[0, 1, 1, 2, 2, 0]),
+            PieceConfig::new(2, 3, &[2, 1, 0, 0, 2, 1]),
+            PieceConfig::new(3, 2, &[0, 2, 2, 1, 1, 0]),
+            PieceConfig::new(2, 3, &[0, 3, 1, 4, 1, 0]),
+            PieceConfig::new(3, 2, &[4, 0, 1, 3, 0, 1]),
+            PieceConfig::new(2, 3, &[0, 1, 4, 1, 3, 0]),
+            PieceConfig::new(3, 2, &[1, 0, 3, 1, 0, 4]),
         ];
-    
+
         let oct_1: Vec<PieceConfig> = vec![
-            PieceConfig::new(1,8, &[1,2,1,2,1,2,1,2]),
-            PieceConfig::new(1,8, &[2,1,2,1,2,1,2,1]),
-            PieceConfig::new(8,1, &[1,2,1,2,1,2,1,2]),
-            PieceConfig::new(8,1, &[2,1,2,1,2,1,2,1]),
-            PieceConfig::new(1,8, &[1,3,1,4,1,3,1,4]),
-            PieceConfig::new(1,8, &[4,1,3,1,4,1,3,1]),
-            PieceConfig::new(8,1, &[1,3,1,4,1,3,1,4]),
-            PieceConfig::new(8,1, &[4,1,3,1,4,1,3,1]),
+            PieceConfig::new(1, 8, &[1, 2, 1, 2, 1, 2, 1, 2]),
+            PieceConfig::new(1, 8, &[2, 1, 2, 1, 2, 1, 2, 1]),
+            PieceConfig::new(8, 1, &[1, 2, 1, 2, 1, 2, 1, 2]),
+            PieceConfig::new(8, 1, &[2, 1, 2, 1, 2, 1, 2, 1]),
+            PieceConfig::new(1, 8, &[1, 3, 1, 4, 1, 3, 1, 4]),
+            PieceConfig::new(1, 8, &[4, 1, 3, 1, 4, 1, 3, 1]),
+            PieceConfig::new(8, 1, &[1, 3, 1, 4, 1, 3, 1, 4]),
+            PieceConfig::new(8, 1, &[4, 1, 3, 1, 4, 1, 3, 1]),
         ];
-    
-        let pieces: Vec<Vec<PieceConfig>> = vec![mono_1, mono_2, domo_1, trom_1, trom_2, trom_3, trom_4, tetr_1, tetr_2, tetr_3, tetr_4, tetr_5, tetr_6, tetr_7, tetr_8, tetr_9, tetr_10, oct_1];
+
+        let pieces: Vec<Vec<PieceConfig>> = vec![
+            mono_1, mono_2, domo_1, trom_1, trom_2, trom_3, trom_4, tetr_1, tetr_2, tetr_3, tetr_4,
+            tetr_5, tetr_6, tetr_7, tetr_8, tetr_9, tetr_10, oct_1,
+        ];
         pieces
     }
-    
+
     pub fn load_pieces() -> Vec<Piece> {
         let piece_configs = Self::load_piece_configs();
-    
+
         let mut pieces: Vec<Piece> = Vec::new();
         for (i, configs) in piece_configs.iter().enumerate() {
             pieces.push(Piece::new(i, configs.clone()));
         }
-    
+
         pieces
     }
 
@@ -346,8 +338,7 @@ impl Kaleidoscope {
     }
 
     // place piece on board (ie. make a move)
-	pub fn set(&mut self, m: Move) {
-
+    pub fn set(&mut self, m: Move) {
         let Move {
             row,
             col,
@@ -362,17 +353,17 @@ impl Kaleidoscope {
         for x in 0..dim_1 {
             for y in 0..dim_2 {
                 let color = self.pieces[piece_idx].get_piece_color(config_idx, x, y);
-                if color != 0 {     // only place non-empty cells
+                if color != 0 {
+                    // only place non-empty cells
                     let idx = self.board_idx(col + x, row + y);
                     self.board[idx] = Some(u8::try_from(piece_idx).unwrap());
                 }
             }
         }
-	}
+    }
 
     // remove piece on board (ie. undo a move)
-	pub fn remove(&mut self, piece_idx: usize) {
-
+    pub fn remove(&mut self, piece_idx: usize) {
         for x in 0..8 {
             for y in 0..8 {
                 let idx = self.board_idx(x, y);
@@ -381,17 +372,17 @@ impl Kaleidoscope {
                         if piece == piece_idx as u8 {
                             self.board[idx] = None;
                         }
-                    },
+                    }
                     None => continue,
                 }
             }
         }
-	}
+    }
 
-	pub fn print(&self) {
-		println!("----------------");
-		for x in 0..8 {
-		    for y in 0..8 {
+    pub fn print(&self) {
+        println!("----------------");
+        for x in 0..8 {
+            for y in 0..8 {
                 let idx = self.board_idx(x, y);
                 let val = match self.board[idx] {
                     Some(piece) => String::from_utf8(vec![(17 - piece) + 65]).unwrap(),
@@ -406,13 +397,13 @@ impl Kaleidoscope {
                 };
             }
             println!();
-		}
-	}
+        }
+    }
 
     pub fn print_ref(&self) {
-		println!("----------------");
+        println!("----------------");
         for x in 0..8 {
-		    for y in 0..8 {
+            for y in 0..8 {
                 let idx = self.board_idx(x, y);
                 match self.refboard[idx] {
                     1 => print!("{}□ ", color::Fg(color::White)),
@@ -423,8 +414,8 @@ impl Kaleidoscope {
                 };
             }
             println!();
-		}
-	}
+        }
+    }
 
     // returns frequency of colors, can help to determine easily if a given board is unsolvable
     pub fn color_freq(&self, freq: &mut [u8; 5]) {
@@ -440,39 +431,47 @@ impl Kaleidoscope {
             for j in 0..8 {
                 let val = self.refboard[self.board_idx(i, j)];
 
-                if i > 0 && val == self.refboard[self.board_idx(i-1, j)] { return false; } // LEFT
-                if i < 7 && val == self.refboard[self.board_idx(i+1, j)] { return false; } // RIGHT
-                if j > 0 && val == self.refboard[self.board_idx(i, j-1)] { return false; } // TOP
-                if j < 7 && val == self.refboard[self.board_idx(i, j+1)] { return false; } // BOTTOM
+                if i > 0 && val == self.refboard[self.board_idx(i - 1, j)] {
+                    return false;
+                } // LEFT
+                if i < 7 && val == self.refboard[self.board_idx(i + 1, j)] {
+                    return false;
+                } // RIGHT
+                if j > 0 && val == self.refboard[self.board_idx(i, j - 1)] {
+                    return false;
+                } // TOP
+                if j < 7 && val == self.refboard[self.board_idx(i, j + 1)] {
+                    return false;
+                } // BOTTOM
             }
         }
         true
     }
 
-	pub fn is_solved(&self) -> bool {
+    pub fn is_solved(&self) -> bool {
         self.board.iter().all(Option::is_some)
-	}
+    }
 
     // Given a piece, returns a vector of possible placements and configurations.
-	pub fn possible(&self, piece_idx: usize) -> VecDeque<Move> {
-
+    pub fn possible(&self, piece_idx: usize) -> VecDeque<Move> {
         let piece = &self.pieces[piece_idx];
 
-		let mut res = VecDeque::new();
+        let mut res = VecDeque::new();
 
-		for pos in 0..64 {     // for each position
-            
+        for pos in 0..64 {
+            // for each position
+
             let pos_x = pos % 8;
             let pos_y = pos / 8;
 
-            'next_config: for config_idx in 0..piece.configs.len() {     // for each config
+            'next_config: for config_idx in 0..piece.configs.len() {
+                // for each config
                 let config = &piece.configs[config_idx];
                 let dim_1 = usize::from(config.width);
                 let dim_2 = usize::from(config.height);
 
                 for x in 0..dim_1 {
                     for y in 0..dim_2 {
-
                         let board_x = pos_x + x;
                         let board_y = pos_y + y;
                         // check if piece fits in the board
@@ -483,11 +482,14 @@ impl Kaleidoscope {
                         // check if piece color matches the board
                         let idx = self.board_idx(board_x, board_y);
                         let color = piece.get_piece_color(config_idx, x, y);
-                        if color != 0 {                                     // non-empty piece color
-                            if self.board[idx].is_some() {        // non-empty board color
+                        if color != 0 {
+                            // non-empty piece color
+                            if self.board[idx].is_some() {
+                                // non-empty board color
                                 continue 'next_config;
                             }
-                            if color != self.refboard[idx] {   // mismatched board color
+                            if color != self.refboard[idx] {
+                                // mismatched board color
                                 continue 'next_config;
                             }
                         }
@@ -505,30 +507,36 @@ impl Kaleidoscope {
     }
 
     // given a starting position, returns possible pieces to place at that cell
-    pub fn possible_at_cell(&self, pos: usize, piece_order: &PlayOrder, available: &Vec<bool>) -> VecDeque<Move> {
-        
+    pub fn possible_at_cell(
+        &self,
+        pos: usize,
+        piece_order: &PlayOrder,
+        available: &Vec<bool>,
+    ) -> VecDeque<Move> {
         let pos_x = pos % 8;
         let pos_y = pos / 8;
 
         let mut res = VecDeque::new();
 
-        for i in 0..piece_order.len() {             // for each piece
+        for i in 0..piece_order.len() {
+            // for each piece
 
             let piece_idx = piece_order[i];
-            if !available[piece_idx] {                     // for each AVAILABLE piece (ie. unused)
+            if !available[piece_idx] {
+                // for each AVAILABLE piece (ie. unused)
                 continue;
             }
 
             let piece = &self.pieces[piece_idx];
 
-            'next_config: for config_idx in 0..piece.configs.len() {     // for each config
+            'next_config: for config_idx in 0..piece.configs.len() {
+                // for each config
                 let config = &piece.configs[config_idx];
                 let dim_1 = usize::from(config.width);
                 let dim_2 = usize::from(config.height);
 
                 for x in 0..dim_1 {
                     for y in 0..dim_2 {
-
                         let board_x = pos_x + x;
                         let board_y = pos_y + y;
                         // check if piece fits in the board
@@ -539,11 +547,14 @@ impl Kaleidoscope {
                         // check if piece color matches the board
                         let idx = self.board_idx(board_x, board_y);
                         let color = piece.get_piece_color(config_idx, x, y);
-                        if color != 0 {                        // non-empty piece color
-                            if self.board[idx].is_some() {     // non-empty board color
+                        if color != 0 {
+                            // non-empty piece color
+                            if self.board[idx].is_some() {
+                                // non-empty board color
                                 continue 'next_config;
                             }
-                            if color != self.refboard[idx] {   // mismatched board color
+                            if color != self.refboard[idx] {
+                                // mismatched board color
                                 continue 'next_config;
                             }
                         }
@@ -561,9 +572,8 @@ impl Kaleidoscope {
     }
 }
 
-
 fn tmp() {
-    let mono_1 = 0b0000000000000000000000000000000000000000000000000000000000000000u64;
+    // 8x1, 1x8
     let oct__1 = 0b1111111100000000000000000000000000000000000000000000000000000000u64;
     let oct__1 = 0b0000000011111111000000000000000000000000000000000000000000000000u64;
     let oct__1 = 0b0000000000000000111111110000000000000000000000000000000000000000u64;
@@ -580,6 +590,363 @@ fn tmp() {
     let oct__1 = 0b0000010000000100000001000000010000000100000001000000010000000100u64;
     let oct__1 = 0b0000001000000010000000100000001000000010000000100000001000000010u64;
     let oct__1 = 0b0000000100000001000000010000000100000001000000010000000100000001u64;
-    
-    let oct__1_ = 0b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000u128;
+
+    // 4x1, 1x4
+    let oct__1 = 0b1111000000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0111100000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0011110000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0001111000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000111100000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000011110000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000001111000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000111100000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000011110000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000001111000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000111100000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000011110000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000001111000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000111100000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000011110000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000001111000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000111100000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000011110000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000001111000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000111100000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000011110000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000001111000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000111100000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000011110000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000001111000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000111100000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000011110000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000001111000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000111100000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000011110000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000001111000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000111100000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000011110000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000001111000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000111100000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000011110000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000001111000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000111100u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000011110u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000001111u64;
+    let oct__1 = 0b1000000010000000100000001000000010000000000000000000000000000000u64;
+    let oct__1 = 0b0100000001000000010000000100000001000000000000000000000000000000u64;
+    let oct__1 = 0b0010000000100000001000000010000000100000000000000000000000000000u64;
+    let oct__1 = 0b0001000000010000000100000001000000010000000000000000000000000000u64;
+    let oct__1 = 0b0000100000001000000010000000100000001000000000000000000000000000u64;
+    let oct__1 = 0b0000010000000100000001000000010000000100000000000000000000000000u64;
+    let oct__1 = 0b0000001000000010000000100000001000000010000000000000000000000000u64;
+    let oct__1 = 0b0000000100000001000000010000000100000001000000000000000000000000u64;
+    let oct__1 = 0b0000000010000000100000001000000010000000100000000000000000000000u64;
+    let oct__1 = 0b0000000001000000010000000100000001000000010000000000000000000000u64;
+    let oct__1 = 0b0000000000100000001000000010000000100000001000000000000000000000u64;
+    let oct__1 = 0b0000000000010000000100000001000000010000000100000000000000000000u64;
+    let oct__1 = 0b0000000000001000000010000000100000001000000010000000000000000000u64;
+    let oct__1 = 0b0000000000000100000001000000010000000100000001000000000000000000u64;
+    let oct__1 = 0b0000000000000010000000100000001000000010000000100000000000000000u64;
+    let oct__1 = 0b0000000000000001000000010000000100000001000000010000000000000000u64;
+    let oct__1 = 0b0000000000000000100000001000000010000000100000001000000000000000u64;
+    let oct__1 = 0b0000000000000000010000000100000001000000010000000100000000000000u64;
+    let oct__1 = 0b0000000000000000001000000010000000100000001000000010000000000000u64;
+    let oct__1 = 0b0000000000000000000100000001000000010000000100000001000000000000u64;
+    let oct__1 = 0b0000000000000000000010000000100000001000000010000000100000000000u64;
+    let oct__1 = 0b0000000000000000000001000000010000000100000001000000010000000000u64;
+    let oct__1 = 0b0000000000000000000000100000001000000010000000100000001000000000u64;
+    let oct__1 = 0b0000000000000000000000010000000100000001000000010000000100000000u64;
+    let oct__1 = 0b0000000000000000000000001000000010000000100000001000000010000000u64;
+    let oct__1 = 0b0000000000000000000000000100000001000000010000000100000001000000u64;
+    let oct__1 = 0b0000000000000000000000000010000000100000001000000010000000100000u64;
+    let oct__1 = 0b0000000000000000000000000001000000010000000100000001000000010000u64;
+    let oct__1 = 0b0000000000000000000000000000100000001000000010000000100000001000u64;
+    let oct__1 = 0b0000000000000000000000000000010000000100000001000000010000000100u64;
+    let oct__1 = 0b0000000000000000000000000000001000000010000000100000001000000010u64;
+    let oct__1 = 0b0000000000000000000000000000000100000001000000010000000100000001u64;
+
+    // 3x1, 1x3
+    let oct__1 = 0b1110000000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0111000000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0011100000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0001110000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000111000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000011100000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000011100000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000001110000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000111000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000011100000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000001110000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000111000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000111000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000011100000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000001110000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000111000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000011100000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000001110000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000001110000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000111000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000011100000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000001110000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000111000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000011100000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000011100000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000001110000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000111000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000011100000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000001110000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000111000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000111000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000011100000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000001110000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000111000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000011100000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000001110000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000001110000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000111000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000011100000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000001110000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000111000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000011100000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000011100000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000001110000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000111000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000011100u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000001110u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000000111u64;
+    let oct__1 = 0b1000000010000000100000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0100000001000000010000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0010000000100000001000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0001000000010000000100000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000100000001000000010000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000010000000100000001000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000001000000010000000100000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000100000001000000010000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000010000000100000001000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000001000000010000000100000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000100000001000000010000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000010000000100000001000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000001000000010000000100000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000100000001000000010000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000010000000100000001000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000001000000010000000100000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000100000001000000010000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000010000000100000001000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000001000000010000000100000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000100000001000000010000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000010000000100000001000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000001000000010000000100000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000100000001000000010000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000010000000100000001000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000001000000010000000100000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000100000001000000010000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000010000000100000001000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000001000000010000000100000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000100000001000000010000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000010000000100000001000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000001000000010000000100000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000100000001000000010000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000010000000100000001000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000001000000010000000100000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000100000001000000010000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000010000000100000001000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000001000000010000000100000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000100000001000000010000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000010000000100000001000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000001000000010000000100000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000100000001000000010000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000010000000100000001000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000001000000010000000100000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000100000001000000010000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000010000000100000001000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000001000000010000000100u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000100000001000000010u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000010000000100000001u64;
+
+    // 2x1, 1x2
+    let oct__1 = 0b1100000000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0110000000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0011000000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0001100000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000110000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000011000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000001100000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000011000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000001100000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000110000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000011000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000001100000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000110000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000011000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000110000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000011000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000001100000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000110000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000011000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000001100000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000110000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000001100000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000110000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000011000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000001100000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000110000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000011000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000001100000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000011000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000001100000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000110000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000011000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000001100000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000110000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000011000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000110000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000011000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000001100000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000110000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000011000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000001100000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000110000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000001100000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000110000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000011000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000001100000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000110000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000011000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000001100000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000011000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000001100000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000110000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000011000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000001100u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000000110u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000000011u64;
+    let oct__1 = 0b1000000010000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0100000001000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0010000000100000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0001000000010000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000100000001000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000010000000100000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000001000000010000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000100000001000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000010000000100000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000001000000010000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000100000001000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000010000000100000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000001000000010000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000100000001000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000010000000100000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000001000000010000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000100000001000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000010000000100000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000001000000010000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000100000001000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000010000000100000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000001000000010000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000100000001000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000010000000100000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000001000000010000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000100000001000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000010000000100000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000001000000010000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000100000001000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000010000000100000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000001000000010000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000100000001000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000010000000100000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000001000000010000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000100000001000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000010000000100000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000001000000010000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000100000001000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000010000000100000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000001000000010000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000100000001000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000010000000100000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000001000000010000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000100000001000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000010000000100000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000001000000010000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000100000001000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000010000000100000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000001000000010000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000100000001000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000010000000100000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000001000000010000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000100000001000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000010000000100u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000001000000010u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000100000001u64;
+
+    // 1x1
+    let oct__1 = 0b1000000000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0100000000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0010000000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0001000000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000100000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000010000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000001000000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000100000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000010000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000001000000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000100000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000010000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000001000000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000100000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000010000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000001000000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000100000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000010000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000001000000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000100000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000010000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000001000000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000100000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000010000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000001000000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000100000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000010000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000001000000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000100000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000010000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000001000000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000100000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000010000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000001000000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000100000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000010000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000001000000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000100000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000010000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000001000000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000100000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000010000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000001000000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000100000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000010000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000001000000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000100000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000010000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000001000000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000100000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000010000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000001000000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000100000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000010000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000001000000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000100000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000010000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000001000000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000100000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000010000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000001000u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000000100u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000000010u64;
+    let oct__1 = 0b0000000000000000000000000000000000000000000000000000000000000001u64;
+
+    // 2x2
+    // -^-
+    // L4 cells
+
+    // L3 cells
+
 }
