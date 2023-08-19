@@ -23,6 +23,7 @@ pub trait Kaleidoscope {
     fn print(&self);
     fn print_ref(&self);
 
+    fn clone_move(&self, mv: &Self::Move) -> Self::Move;
     fn play(&mut self, mv: &Self::Move);
     fn undo(&mut self, mv: Self::Move);
     fn possible(&self, piece: usize) -> Vec<Self::Move>;
@@ -98,32 +99,42 @@ impl Kaleidoscope for BitRepresentation {
         self.board == u128::MAX
     }
 
-    fn print(&self) {}
+    fn print(&self) {
+        println!("{:#128b}", self.board)
+    }
+
     fn print_ref(&self) {}
 
+    fn clone_move(&self, mv: &Self::Move) -> Self::Move {
+        BitPiece {
+            mask: mv.mask,
+            bitpattern: mv.bitpattern,
+        }
+    }
+
     fn play(&mut self, mv: &Self::Move) {
-        let mask = mv[0];
-        let bitpattern = mv[1];
-        let mask_overlap = &self.board & mask == 0;
-        let pattern_overlap = &self.refboard & mask == bitpattern;
+        let mask_overlap = &self.board & mv.mask == 0;
+        let pattern_overlap = &self.refboard & mv.mask == mv.bitpattern;
 
         if mask_overlap && pattern_overlap {
-            self.board |= mask;
+            self.board |= mv.mask;
         } else {
             panic!("illegal placement")
         }
     }
 
-    fn undo(&mut self, mv: &Self::Move) {
-        self.board &= !mv[0];
+    fn undo(&mut self, mv: Self::Move) {
+        self.board &= !mv.mask;
     }
 
     fn possible(&self, piece_idx: usize) -> Vec<Self::Move> {
         let mut possible_moves = Vec::new();
         let configs = &self.pieces[piece_idx];
-        for config in configs {
-            if &self.board & config[0] == 0 {
-                possible_moves.push(config.clone());
+        for mv in configs {
+            let mask_overlap = &self.board & mv.mask == 0;
+            let pattern_overlap = &self.refboard & mv.mask == mv.bitpattern;
+            if mask_overlap && pattern_overlap {
+                possible_moves.push(mv.clone());
             }
         }
         possible_moves

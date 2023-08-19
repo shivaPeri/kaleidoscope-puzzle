@@ -13,7 +13,7 @@ pub struct BacktrackingSolver<T: Kaleidoscope> {
     pub time: Option<time::Duration>,
     pub possible: [usize; 18], // slice of index of last move we tried for a given piece
     pub cur_move: usize,       // index into strategy (piece ordering)
-    pub last_move: Option<T::Move>, // last move (for undo operation)
+    pub solution: Vec<T::Move>, // list of moves in solution (for undo operation)
 }
 
 impl<T: Kaleidoscope> BacktrackingSolver<T> {
@@ -24,7 +24,7 @@ impl<T: Kaleidoscope> BacktrackingSolver<T> {
             time: None,
             possible: [0; 18],
             cur_move: 0,
-            last_move: None,
+            solution: Vec::new(),
         }
     }
 }
@@ -41,6 +41,8 @@ impl<T: Kaleidoscope> Solver<T> for BacktrackingSolver<T> {
                 break;
             }
 
+            self.game.print();
+
             // intialization
             let piece_idx = strategy[self.cur_move];
             let move_idx = self.possible[piece_idx];
@@ -48,19 +50,21 @@ impl<T: Kaleidoscope> Solver<T> for BacktrackingSolver<T> {
 
             // if there are no moves available
             if possible_moves.len() == 0 || move_idx >= possible_moves.len() {
-                match self.last_move {
+                match self.solution.len() {
                     // if there are no remaining moves
-                    None => break,
-                    Some(mv) => {
+                    0 => break,
+                    _ => {
                         self.cur_move -= 1;
+                        let mv = self.solution.pop().unwrap();
                         self.game.undo(mv);
                     }
                 }
             } else {
                 // increment index of possible moves to avoid re-playing in later iteration
                 self.possible[piece_idx] += 1;
-                self.game.play(&possible_moves[move_idx]);
-                self.last_move = Some(possible_moves[move_idx].copy());
+                let mv = &possible_moves[move_idx];
+                self.game.play(mv);
+                self.solution.push(self.game.clone_move(mv));
                 self.num_moves += 1;
                 self.cur_move += 1;
             }
