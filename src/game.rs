@@ -22,6 +22,7 @@ pub trait Kaleidoscope {
     // fn is_checkerboard(&self) -> bool;
     // fn solvable(&self) -> bool;
     fn print(&self);
+    fn print_move(&self, mv: &Self::Move);
     fn print_ref(&self);
 
     fn clone_move(&self, mv: &Self::Move) -> Self::Move;
@@ -91,7 +92,8 @@ impl Kaleidoscope for BitRepresentation {
         Self {
             board: 0,
             refboard,
-            pieces: Self::load_pieces_from_file("python/pieces.txt"),
+            pieces: Self::load_pieces_from_file("python/pieces3.txt"),
+            // pieces: Self::load_pieces_from_file("python/pieces.txt"),
         }
     }
 
@@ -100,7 +102,25 @@ impl Kaleidoscope for BitRepresentation {
     }
 
     fn print(&self) {
-        println!("{:b}", self.board)
+        for i in 0..8 {
+            for j in 0..8 {
+                print!("{}", (self.board >> 2 * (i * 8 + j) & 3));
+            }
+            println!("");
+        }
+        // println!("{:#128b}", self.board)
+    }
+
+    fn print_move(&self, mv: &Self::Move) {
+        // println!("\n{:#128b}\n", mv.mask);
+        for i in 0..8 {
+            for j in 0..8 {
+                let k = i * 8 + j;
+                print!("{}", (mv.mask >> 128 - 2 * (k + 1)) & 1);
+            }
+            println!("");
+        }
+        println!("");
     }
 
     fn print_ref(&self) {}
@@ -446,6 +466,10 @@ impl Kaleidoscope for VectorRepresentation {
             }
             println!();
         }
+    }
+
+    fn print_move(&self, mv: &Self::Move) {
+        println!("{:?}", mv);
     }
 
     fn print_ref(&self) {

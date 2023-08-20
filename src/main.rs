@@ -26,7 +26,7 @@ fn main() {
         0 => {
             let x = game::BitRepresentation::new(Path::new(&args.file), &args.board);
             x.print_ref();
-            let mut solver = game::solver::BacktrackingSolver::<BitRepresentation>::new(x);
+            let mut solver = game::solver::BacktrackingSolver2::<BitRepresentation>::new(x);
             let solved = solver.solve(strat);
             print!("{}", solved);
             solver.print();

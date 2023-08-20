@@ -174,6 +174,9 @@ impl<T: Kaleidoscope> Solver<T> for BacktrackingSolver2<T> {
                 self.time.unwrap().as_secs_f64()
             );
             self.game.print();
+            // for mv in self.solution.iter() {
+            //     self.game.print_move(&mv);
+            // }
         } else {
             println!(
                 "\nNo solution found. {} moves in {}s",

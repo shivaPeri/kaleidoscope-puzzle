@@ -232,11 +232,40 @@ class Board():
                 res += str(cell) * 2
         return res
 
-    def placePiece(self, piece, fd):
-        for i, config in enumerate(piece):                      # for all configurations
-            width, height = len(config), len(config[0])
-            for pos_x in range(8-(width-1)):                    # for each position
-                for pos_y in range(8-(height-1)):
+    # def placePiece(self, piece, fd):
+    #     for i, config in enumerate(piece):                      # for all configurations
+    #         width, height = len(config), len(config[0])
+    #         for pos_x in range(8-(width-1)):                    # for each position
+    #             for pos_y in range(8-(height-1)):
+    #                 for x in range(width):
+    #                     for y in range(height):
+    #                         board_x = pos_x + x
+    #                         board_y = pos_y + y
+    #                         self.board[board_x][board_y] = config[x][y]
+    #                         if config[x][y] != 0:
+    #                             self.mask[board_x][board_y] = 1
+
+    #                 mask64 = self.getMask64()
+    #                 mask128 = self.getMask128()
+    #                 pattern = self.getBitpattern128()
+
+    #                 # binary_integer = int(mask64, 2)
+    #                 # hex_string = format(binary_integer, '032x')
+    #                 # print("{}\t{}\n".format(binary_integer, hex_string))
+
+    #                 fd.write("{},{}\n".format(mask128, pattern))
+    #                 self.clear()
+    #     fd.write("\n")
+
+    def placePiece2(self, piece, fd):
+        num = 0
+        for pos in range(64):                    # for each position
+            pos_x = pos % 8
+            pos_y = pos // 8
+            for i, config in enumerate(piece):                      # for all configurations
+                width, height = len(config), len(config[0])
+
+                try:
                     for x in range(width):
                         for y in range(height):
                             board_x = pos_x + x
@@ -248,16 +277,16 @@ class Board():
                     mask64 = self.getMask64()
                     mask128 = self.getMask128()
                     pattern = self.getBitpattern128()
-
-                    # binary_integer = int(mask64, 2)
-                    # hex_string = format(binary_integer, '032x')
-                    # print("{}\t{}\n".format(binary_integer, hex_string))
-
-                    fd.write("{},{}\n".format(mask64, pattern))
+                    fd.write("{},{}\n".format(mask128, pattern))
                     self.clear()
+                    num += 1
+                except:
+                    self.clear()
+                    continue
         fd.write("\n")
+        print(num)
 
-with open("pieces2.txt", "w") as fd:
+with open("pieces3.txt", "w") as fd:
     board = Board()
     for piece in pieces:
-        board.placePiece(piece, fd)
+        board.placePiece2(piece, fd)
