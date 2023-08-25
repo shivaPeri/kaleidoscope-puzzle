@@ -132,15 +132,17 @@ impl Kaleidoscope for BitRepresentation {
         }
     }
 
+    // assumes move is legal
     fn play(&mut self, mv: &Self::Move) {
-        let mask_overlap = &self.board & mv.mask == 0;
-        let pattern_overlap = &self.refboard & mv.mask == mv.bitpattern;
+        self.board |= mv.mask;
+        // let mask_overlap = &self.board & mv.mask == 0;
+        // let pattern_overlap = &self.refboard & mv.mask == mv.bitpattern;
 
-        if mask_overlap && pattern_overlap {
-            self.board |= mv.mask;
-        } else {
-            panic!("illegal placement")
-        }
+        // if mask_overlap && pattern_overlap {
+        //     self.board |= mv.mask;
+        // } else {
+        //     panic!("illegal placement")
+        // }
     }
 
     fn undo(&mut self, mv: Self::Move) {

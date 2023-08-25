@@ -1,4 +1,5 @@
 use super::{Kaleidoscope, Solver};
+use std::thread;
 use std::time::{self, Instant};
 
 /*
@@ -185,4 +186,34 @@ impl<T: Kaleidoscope> Solver<T> for BacktrackingSolver2<T> {
             );
         }
     }
+}
+
+/* multithreaded version of solver
+this should spawn four threads and return whichever one returns with a solution first
+*/
+#[derive(Debug, Clone)]
+pub struct MultithreadedSolver<T: Kaleidoscope> {
+    pub game: T,
+    pub num_moves: u128,
+    pub time: Option<time::Duration>,
+}
+
+impl<T: Kaleidoscope> MultithreadedSolver<T> {
+    pub fn new(game: T) -> Self {
+        Self {
+            game,
+            num_moves: 0,
+            time: None,
+        }
+    }
+}
+
+impl<T: Kaleidoscope> Solver<T> for MultithreadedSolver<T> {
+    type Strategy = [usize; 18];
+
+    fn solve(&mut self, strategy: Self::Strategy) -> bool {
+        false
+    }
+
+    fn print(&self) {}
 }
