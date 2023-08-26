@@ -1,15 +1,23 @@
 
 const SQSIZE = 50
+const alpha = 50
 let REDFILL, BLACKFILL, BLUEFILL, YELLOWFILL
 let gamepieces = []
 let refboard, gameboard
 let games
-// let game_name = "australian-emu"
-let game_name = "girl-wearing-cowboy-hat"
+let game_name = "australian-emu"
+// let game_name = "girl-wearing-cowboy-hat"
+
+let selector
 
 /* ***************** INIT + MAIN LOOP ******************* */
 
 function setup() {
+
+  REDCLEAR = color(219, 57, 57, alpha)
+  BLACKCLEAR = color(33, 33, 33, alpha)
+  BLUECLEAR = color(32, 89, 168, alpha)
+  YELLOWCLEAR = color(255, 222, 36, alpha)
 
   REDFILL = color(219, 57, 57)
   BLACKFILL = color(33, 33, 33)
@@ -19,21 +27,28 @@ function setup() {
   var cnv = createCanvas(window.innerWidth, window.innerHeight);
   cnv.position(0, 0, 'fixed')
 
-  let start = (width - (200 + 16 * SQSIZE)) / 2
+  selector_size = 200;
+  selector = createSelect();
+  selector.size(selector_size);
+  selector.position((width - selector_size) / 2, 70)
+  console.log(selector)
+  selector.changed(parseBoard);
+
+  let start = (width - (8 * SQSIZE)) / 2
   refboard = new Board(puzzles["new"], start, 100, true)
-  gameboard = new Board(puzzles["new2"], start + 8 * SQSIZE + 200, 100, false)
+  gameboard = new Board(puzzles["new2"], start, 100, false)
 
   fetch('../../boards/scraped-boards.json')
     // fetch('https://github.com/shivaPeri/kaleidoscope-puzzle/blob/main/boards/' + 'scraped-boards.json')
     .then(response => response.json())
     .then(data => {
       games = data
-      for (let i = 0; i < data[game_name].length; i++) {
-        let row = Math.floor(i / 8);
-        let col = i % 8;
-        refboard.arr[row][col] = parseInt(data[game_name][i])
-      }
 
+      for (const [key, _] of Object.entries(games)) {
+        selector.option(key);
+      }
+      selector.selected(game_name)
+      parseBoard()
       redraw()
     })
     .catch(error => console.log(error))
@@ -184,10 +199,10 @@ class Board {
 
         noStroke()
         switch (this.arr[i][j]) {
-          case RED: fill(REDFILL); break;
-          case BLACK: fill(BLACKFILL); break;
-          case BLUE: fill(BLUEFILL); break;
-          case YELLOW: fill(YELLOWFILL); break;
+          case RED: this.ref ? fill(REDCLEAR) : fill(REDFILL); break;
+          case BLACK: this.ref ? fill(BLACKCLEAR) : fill(BLACKFILL); break;
+          case BLUE: this.ref ? fill(BLUECLEAR) : fill(BLUEFILL); break;
+          case YELLOW: this.ref ? fill(YELLOWCLEAR) : fill(YELLOWFILL); break;
           default: stroke(230); strokeWeight(2); noFill();
         }
 
@@ -208,6 +223,17 @@ class Board {
 
     // TODO
 
+  }
+}
+
+/* ***************** HELPER FUNCTIONS ******************* */
+
+const parseBoard = () => {
+  let str = games[selector.value()]
+  for (let i = 0; i < str.length; i++) {
+    let row = Math.floor(i / 8);
+    let col = i % 8;
+    refboard.arr[row][col] = parseInt(str[i])
   }
 }
 
