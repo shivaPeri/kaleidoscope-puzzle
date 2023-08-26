@@ -1,5 +1,6 @@
 
 const SQSIZE = 50
+const MINI_SQSIZE = 10
 const alpha = 50
 let REDFILL, BLACKFILL, BLUEFILL, YELLOWFILL
 let gamepieces = []
@@ -31,7 +32,6 @@ function setup() {
   selector = createSelect();
   selector.size(selector_size);
   selector.position((width - selector_size) / 2, 70)
-  console.log(selector)
   selector.changed(parseBoard);
 
   let start = (width - (8 * SQSIZE)) / 2
@@ -55,7 +55,7 @@ function setup() {
 
 
   for (var i = 0; i < pieces.length; i++)
-    gamepieces.push(new Piece(pieces[i]))
+    gamepieces.push(new Piece(pieces[i], i))
 }
 
 function draw() {
@@ -69,31 +69,33 @@ function draw() {
 
 /* ***************** CLASSES ******************* */
 
-class Cell {
-  constructor(x, y, color) {
-    this.x = x
-    this.y = y
-    this.color = color
-  }
+// class Cell {
+//   constructor(x, y, color) {
+//     this.x = x
+//     this.y = y
+//     this.color = color
+//   }
 
-  draw() {
-    noStroke()
-    fill(this.color)
-    rect(this.x + j * SQSIZE, this.y + i * SQSIZE, SQSIZE, SQSIZE)
-  }
-}
+//   draw() {
+//     noStroke()
+//     fill(this.color)
+//     rect(this.x + j * SQSIZE, this.y + i * SQSIZE, SQSIZE, SQSIZE)
+//   }
+// }
 
 class Piece {
-  constructor(ndarray) {
+  constructor(ndarray, idx) {
     this.arr = nj.array(ndarray)
 
     // translate flag
     this.selected = false
 
     // position (random spawn)
-    var mag = 100
-    this.x = random(mag, width - mag)
-    this.y = random(height / 4 * 3, height - mag)
+    var mag = 10
+    this.x = (idx % 9) * (width - mag) * 0.07 + (100)
+    this.y = (idx % 2) * (height - mag) * 0.05 + (height / 4 * 3)
+    // this.x = random(mag, width - mag)
+    // this.y = random(height / 4 * 3, height - mag)
 
     // relative mouse position
     this.dx = 0
@@ -131,11 +133,13 @@ class Piece {
           default: continue;
         }
 
-        rect(this.x + j * SQSIZE, this.y + i * SQSIZE, SQSIZE, SQSIZE)
+        let size = this.selected ? SQSIZE : MINI_SQSIZE
+        rect(this.x + j * size, this.y + i * size, size, size)
+
 
         if (this.mouseOver()) {
           fill(255, 255, 255, 50)
-          rect(this.x + j * SQSIZE, this.y + i * SQSIZE, SQSIZE, SQSIZE)
+          rect(this.x + j * size, this.y + i * size, size, size)
         }
 
       }
@@ -146,12 +150,13 @@ class Piece {
     for (var i = 0; i < this.arr.shape[0]; i++) {
       for (var j = 0; j < this.arr.shape[1]; j++) {
 
+        let size = this.selected ? SQSIZE : MINI_SQSIZE;
         if (this.arr.get(i, j, 0) != EMPTY) {
 
-          if (mouseX > this.x + j * SQSIZE &&
-            mouseX < this.x + (j + 1) * SQSIZE &&
-            mouseY > this.y + i * SQSIZE &&
-            mouseY < this.y + (i + 1) * SQSIZE)
+          if (mouseX > this.x + j * size &&
+            mouseX < this.x + (j + 1) * size &&
+            mouseY > this.y + i * size &&
+            mouseY < this.y + (i + 1) * size)
             return true;
 
         }
