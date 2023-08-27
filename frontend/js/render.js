@@ -1,7 +1,7 @@
 
-const SQSIZE = 50
+const SQSIZE = 60
 const MINI_SQSIZE = 10
-const alpha = 50
+let alpha = 100
 let REDFILL, BLACKFILL, BLUEFILL, YELLOWFILL
 let gamepieces = []
 let refboard, gameboard
@@ -10,6 +10,7 @@ let game_name = "australian-emu"
 // let game_name = "girl-wearing-cowboy-hat"
 
 let selector
+// let slider
 
 /* ***************** INIT + MAIN LOOP ******************* */
 
@@ -25,6 +26,8 @@ function setup() {
   BLUEFILL = color(32, 89, 168)
   YELLOWFILL = color(255, 222, 36)
 
+  angleMode(DEGREES)
+
   var cnv = createCanvas(window.innerWidth, window.innerHeight);
   cnv.position(0, 0, 'fixed')
 
@@ -33,6 +36,16 @@ function setup() {
   selector.size(selector_size);
   selector.position((width - selector_size) / 2, 70)
   selector.changed(parseBoard);
+
+  // slider = createSlider(0, 255, 100);
+  // slider.position(10, 10)
+  // slider.changed(() => {
+  //   alpha = slider.value()
+  //   REDCLEAR = color(219, 57, 57, alpha)
+  //   BLACKCLEAR = color(33, 33, 33, alpha)
+  //   BLUECLEAR = color(32, 89, 168, alpha)
+  //   YELLOWCLEAR = color(255, 222, 36, alpha)
+  // })
 
   let start = (width - (8 * SQSIZE)) / 2
   refboard = new Board(puzzles["new"], start, 100, true)
@@ -87,13 +100,15 @@ class Piece {
   constructor(ndarray, idx) {
     this.arr = nj.array(ndarray)
 
-    // translate flag
+    // translate flag, animation flag
     this.selected = false
+    this.transition = false
+    this.progress = 0.0       // transition progress
 
-    // position (random spawn)
+    // position (random spawn) (spawn based on index)
     var mag = 10
-    this.x = (idx % 9) * (width - mag) * 0.07 + (100)
-    this.y = (idx % 2) * (height - mag) * 0.05 + (height / 4 * 3)
+    this.x = (idx % 6) * (width - mag) * 0.07 + (450)
+    this.y = (~~(idx / 6)) * (height - mag) * 0.05 + (height / 4 * 3)
     // this.x = random(mag, width - mag)
     // this.y = random(height / 4 * 3, height - mag)
 
@@ -107,7 +122,25 @@ class Piece {
       this.arr = nj.rot90(this.arr)
       this.x = mouseX + (this.y - mouseY)
       this.y = mouseY + (this.x - mouseX)
-      redraw()
+      this.transition = true
+      this.rotateAnimation()
+      // redraw()
+      this.draw()
+    }
+  }
+
+  rotateAnimation() {
+    if (this.transition) {
+      console.log("called")
+      push()
+      translate(-(this.x + this.dx), -(this.y + this.dy))
+      while (this.progress < 1) {
+        rotate(9)
+        this.draw()
+        this.progress += 1
+      }
+      this.transition = false
+      this.progress = 0
     }
   }
 
@@ -121,6 +154,8 @@ class Piece {
 
   draw() {
 
+    let size = this.selected ? SQSIZE : MINI_SQSIZE
+
     noStroke()
     for (var i = 0; i < this.arr.shape[0]; i++) {
       for (var j = 0; j < this.arr.shape[1]; j++) {
@@ -133,7 +168,7 @@ class Piece {
           default: continue;
         }
 
-        let size = this.selected ? SQSIZE : MINI_SQSIZE
+
         rect(this.x + j * size, this.y + i * size, size, size)
 
 
@@ -144,6 +179,11 @@ class Piece {
 
       }
     }
+
+    stroke(0, 255, 0)
+    noFill()
+    circle(this.x, this.y, size)
+    circle(this.x - this.dx, this.y - this.dy, size * 0.5)
   }
 
   mouseOver() {
@@ -208,10 +248,20 @@ class Board {
           case BLACK: this.ref ? fill(BLACKCLEAR) : fill(BLACKFILL); break;
           case BLUE: this.ref ? fill(BLUECLEAR) : fill(BLUEFILL); break;
           case YELLOW: this.ref ? fill(YELLOWCLEAR) : fill(YELLOWFILL); break;
-          default: stroke(230); strokeWeight(2); noFill();
+          default: stroke(100); strokeWeight(2); noFill();
         }
 
         rect(this.x + j * SQSIZE, this.y + i * SQSIZE, SQSIZE, SQSIZE)
+      }
+    }
+
+    if (this.ref) {
+      noStroke()
+      fill(0, 50)
+      for (var i = 0; i < this.arr.length; i++) {
+        for (var j = 0; j < this.arr[0].length; j++) {
+          circle(this.x + (j + .5) * SQSIZE, this.y + (i + .5) * SQSIZE, SQSIZE / 2)
+        }
       }
     }
 
@@ -223,6 +273,7 @@ class Board {
       mouseY > this.y && mouseY < this.y + this.h)
   }
 
+  // snap piece location to closest legal board placement
   placePiece(piece, where) {
     if (isRef) return;
 
