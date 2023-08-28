@@ -10,6 +10,7 @@ let game_name = "australian-emu"
 // let game_name = "girl-wearing-cowboy-hat"
 
 let selector
+let selected_piece = null
 // let slider
 
 /* ***************** INIT + MAIN LOOP ******************* */
@@ -77,6 +78,9 @@ function draw() {
   refboard.draw()
   for (var piece of gamepieces) piece.draw()
 
+  // for (var piece of gamepieces) piece.rotatation += 1
+  // for (var piece of gamepieces) piece.scale += 0.1
+
   noLoop()
 }
 
@@ -98,19 +102,20 @@ function draw() {
 
 class Piece {
   constructor(ndarray, idx) {
+    this.id = idx
     this.arr = nj.array(ndarray)
+    this.placed = false
 
-    // translate flag, animation flag
-    this.selected = false
-    this.transition = false
-    this.progress = 0.0       // transition progress
+    let size = selected_piece == this.id ? SQSIZE : MINI_SQSIZE
+    this.w = size * this.arr.shape[0]
+    this.h = size * this.arr.shape[1]
 
-    // position (random spawn) (spawn based on index)
+    // position (spawn based on index)
     var mag = 10
+    this.spawn_x = (idx % 6) * (width - mag) * 0.07 + (450)
+    this.spawn_y = (~~(idx / 6)) * (height - mag) * 0.05 + (height / 4 * 3)
     this.x = (idx % 6) * (width - mag) * 0.07 + (450)
     this.y = (~~(idx / 6)) * (height - mag) * 0.05 + (height / 4 * 3)
-    // this.x = random(mag, width - mag)
-    // this.y = random(height / 4 * 3, height - mag)
 
     // relative mouse position
     this.dx = 0
@@ -118,34 +123,16 @@ class Piece {
   }
 
   rotate() {
-    if (this.selected) {
+    if (selected_piece == this.id) {
       this.arr = nj.rot90(this.arr)
       this.x = mouseX + (this.y - mouseY)
       this.y = mouseY + (this.x - mouseX)
-      this.transition = true
-      this.rotateAnimation()
-      // redraw()
-      this.draw()
-    }
-  }
-
-  rotateAnimation() {
-    if (this.transition) {
-      console.log("called")
-      push()
-      translate(-(this.x + this.dx), -(this.y + this.dy))
-      while (this.progress < 1) {
-        rotate(9)
-        this.draw()
-        this.progress += 1
-      }
-      this.transition = false
-      this.progress = 0
+      redraw()
     }
   }
 
   flip() {
-    if (this.selected) {
+    if (selected_piece == this.id) {
       this.arr = nj.flip(this.arr, 0)
       this.arr = nj.flip(this.arr, 2)
       redraw()
@@ -154,7 +141,7 @@ class Piece {
 
   draw() {
 
-    let size = this.selected ? SQSIZE : MINI_SQSIZE
+    let size = selected_piece == this.id ? SQSIZE : MINI_SQSIZE
 
     noStroke()
     for (var i = 0; i < this.arr.shape[0]; i++) {
@@ -168,29 +155,21 @@ class Piece {
           default: continue;
         }
 
-
         rect(this.x + j * size, this.y + i * size, size, size)
-
 
         if (this.mouseOver()) {
           fill(255, 255, 255, 50)
           rect(this.x + j * size, this.y + i * size, size, size)
         }
-
       }
     }
-
-    stroke(0, 255, 0)
-    noFill()
-    circle(this.x, this.y, size)
-    circle(this.x - this.dx, this.y - this.dy, size * 0.5)
   }
 
   mouseOver() {
     for (var i = 0; i < this.arr.shape[0]; i++) {
       for (var j = 0; j < this.arr.shape[1]; j++) {
 
-        let size = this.selected ? SQSIZE : MINI_SQSIZE;
+        let size = selected_piece == this.id ? SQSIZE : MINI_SQSIZE;
         if (this.arr.get(i, j, 0) != EMPTY) {
 
           if (mouseX > this.x + j * size &&
@@ -198,9 +177,7 @@ class Piece {
             mouseY > this.y + i * size &&
             mouseY < this.y + (i + 1) * size)
             return true;
-
         }
-
       }
     }
 
@@ -274,10 +251,18 @@ class Board {
   }
 
   // snap piece location to closest legal board placement
-  placePiece(piece, where) {
-    if (isRef) return;
+  place() {
+    if (this.ref) return;
 
     // TODO
+    //
+
+    if (selected_piece != null) {
+      let piece = gamepieces[selected_piece]
+      piece.x = piece.spawn_x
+      piece.y = piece.spawn_y
+    }
+
 
   }
 }
@@ -300,42 +285,36 @@ function windowResized() {
 }
 
 function mouseMoved() {
-  for (var piece of gamepieces) {
-    if (piece.selected) {
-      piece.x = mouseX + piece.dx
-      piece.y = mouseY + piece.dy
-    }
+  if (selected_piece != null) {
+    let piece = gamepieces[selected_piece]
+    piece.x = mouseX
+    piece.y = mouseY
+    redraw()
   }
-  redraw()
 }
 
-
 function keyPressed() {
-  for (var piece of gamepieces) {
-    if (piece.selected) {
-      switch (keyCode) {
-        case (UP_ARROW): piece.flip(); break;
-        case (DOWN_ARROW): piece.flip(); break;
-        case (RIGHT_ARROW): piece.rotate(); break;
-        case (LEFT_ARROW): piece.rotate(); break;
-      }
+  if (selected_piece != null) {
+    let piece = gamepieces[selected_piece]
+    switch (keyCode) {
+      case (UP_ARROW): piece.flip(); break;
+      case (DOWN_ARROW): piece.flip(); break;
+      case (RIGHT_ARROW): piece.rotate(); break;
+      case (LEFT_ARROW): piece.rotate(); break;
     }
   }
 }
 
 function mouseClicked() {
-  for (var piece of gamepieces) {
-
-    if (piece.selected) {
-      piece.selected = !piece.selected
-      return
-    }
-
-    if (piece.mouseOver()) {
-
-      piece.selected = !piece.selected
-      piece.dx = piece.x - mouseX
-      piece.dy = piece.y - mouseY
+  if (selected_piece != null) {
+    gameboard.place()
+    selected_piece = null
+  } else {
+    for (var piece of gamepieces) {
+      if (piece.mouseOver()) {
+        selected_piece = piece.id
+      }
     }
   }
+  redraw()
 }
