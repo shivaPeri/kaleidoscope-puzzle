@@ -208,10 +208,52 @@ impl<T: Kaleidoscope> MultithreadedSolver<T> {
     }
 }
 
+// TODO: implement this to take a gameboard, rotate it to 0, 90, 180, 270
 impl<T: Kaleidoscope> Solver<T> for MultithreadedSolver<T> {
     type Strategy = [usize; 18];
 
     fn solve(&mut self, strategy: Self::Strategy) -> bool {
+
+        let thread1 = thread::spawn(|| {
+            println!("thread 1");
+            let game1 = &self.game.rotate(0);
+            let solver = BacktrackingSolver<T>::new(game1);
+            if solver.solve() {
+                return true;
+                return solver.game;
+            }
+        });
+
+        let thread2 = thread::spawn(|| {
+            println!("thread 2");
+            let game2 = &self.game.rotate(90);
+            let solver = BacktrackingSolver<T>::new(game2);
+            if solver.solve() {
+                return true;
+                return solver.game;
+            }
+        });
+
+        let thread3 = thread::spawn(|| {
+            println!("thread 3");
+            let game3 = &self.game.rotate(180);
+            let solver = BacktrackingSolver<T>::new(game3);
+            if solver.solve() {
+                return true;
+                return solver.game;
+            }
+        });
+
+        let thread4 = thread::spawn(|| {
+            println!("thread 4");
+            let game4 = &self.game.rotate(270);
+            let solver = BacktrackingSolver<T>::new(game4);
+            if solver.solve() {
+                return true;
+                return solver.game;
+            }
+        });
+
         false
     }
 
