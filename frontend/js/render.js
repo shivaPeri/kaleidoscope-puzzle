@@ -11,7 +11,6 @@ let game_name = "australian-emu"
 
 let selector
 let selected_piece = null
-// let slider
 
 /* ***************** INIT + MAIN LOOP ******************* */
 
@@ -27,33 +26,22 @@ function setup() {
   BLUEFILL = color(32, 89, 168)
   YELLOWFILL = color(255, 222, 36)
 
-  angleMode(DEGREES)
-
+  // canvas HTML object
   var cnv = createCanvas(window.innerWidth, window.innerHeight);
   cnv.position(0, 0, 'fixed')
 
+  // game selector dropdown
   selector_size = 200;
   selector = createSelect();
   selector.size(selector_size);
   selector.position((width - selector_size) / 2, 70)
   selector.changed(parseBoard);
 
-  // slider = createSlider(0, 255, 100);
-  // slider.position(10, 10)
-  // slider.changed(() => {
-  //   alpha = slider.value()
-  //   REDCLEAR = color(219, 57, 57, alpha)
-  //   BLACKCLEAR = color(33, 33, 33, alpha)
-  //   BLUECLEAR = color(32, 89, 168, alpha)
-  //   YELLOWCLEAR = color(255, 222, 36, alpha)
-  // })
-
   let start = (width - (8 * SQSIZE)) / 2
   refboard = new Board(puzzles["new"], start, 100, true)
   gameboard = new Board(puzzles["new2"], start, 100, false)
 
   fetch('../../boards/scraped-boards.json')
-    // fetch('https://github.com/shivaPeri/kaleidoscope-puzzle/blob/main/boards/' + 'scraped-boards.json')
     .then(response => response.json())
     .then(data => {
       games = data
@@ -67,9 +55,10 @@ function setup() {
     })
     .catch(error => console.log(error))
 
-
   for (var i = 0; i < pieces.length; i++)
     gamepieces.push(new Piece(pieces[i], i))
+
+  noLoop()
 }
 
 function draw() {
@@ -78,27 +67,9 @@ function draw() {
   refboard.draw()
   for (var piece of gamepieces) piece.draw()
 
-  // for (var piece of gamepieces) piece.rotatation += 1
-  // for (var piece of gamepieces) piece.scale += 0.1
-
-  noLoop()
 }
 
 /* ***************** CLASSES ******************* */
-
-// class Cell {
-//   constructor(x, y, color) {
-//     this.x = x
-//     this.y = y
-//     this.color = color
-//   }
-
-//   draw() {
-//     noStroke()
-//     fill(this.color)
-//     rect(this.x + j * SQSIZE, this.y + i * SQSIZE, SQSIZE, SQSIZE)
-//   }
-// }
 
 class Piece {
   constructor(ndarray, idx) {
@@ -106,20 +77,12 @@ class Piece {
     this.arr = nj.array(ndarray)
     this.placed = false
 
-    let size = selected_piece == this.id ? SQSIZE : MINI_SQSIZE
-    this.w = size * this.arr.shape[0]
-    this.h = size * this.arr.shape[1]
-
     // position (spawn based on index)
     var mag = 10
     this.spawn_x = (idx % 6) * (width - mag) * 0.07 + (450)
     this.spawn_y = (~~(idx / 6)) * (height - mag) * 0.05 + (height / 4 * 3)
-    this.x = (idx % 6) * (width - mag) * 0.07 + (450)
-    this.y = (~~(idx / 6)) * (height - mag) * 0.05 + (height / 4 * 3)
-
-    // relative mouse position
-    this.dx = 0
-    this.dy = 0
+    this.x = this.spawn_x
+    this.y = this.spawn_y
   }
 
   rotate() {
@@ -141,9 +104,12 @@ class Piece {
 
   draw() {
 
-    let size = selected_piece == this.id ? SQSIZE : MINI_SQSIZE
-
     noStroke()
+    let size = selected_piece == this.id ? SQSIZE : MINI_SQSIZE
+    let dx = this.arr.shape[1] * size / 2
+    let dy = this.arr.shape[0] * size / 2
+
+
     for (var i = 0; i < this.arr.shape[0]; i++) {
       for (var j = 0; j < this.arr.shape[1]; j++) {
 
@@ -155,11 +121,11 @@ class Piece {
           default: continue;
         }
 
-        rect(this.x + j * size, this.y + i * size, size, size)
+        rect(this.x + j * size - dx, this.y + i * size - dy, size, size)
 
         if (this.mouseOver()) {
           fill(255, 255, 255, 50)
-          rect(this.x + j * size, this.y + i * size, size, size)
+          rect(this.x + j * size - dx, this.y + i * size - dy, size, size)
         }
       }
     }
@@ -170,12 +136,14 @@ class Piece {
       for (var j = 0; j < this.arr.shape[1]; j++) {
 
         let size = selected_piece == this.id ? SQSIZE : MINI_SQSIZE;
+        let dx = this.arr.shape[1] * size / 2
+        let dy = this.arr.shape[0] * size / 2
         if (this.arr.get(i, j, 0) != EMPTY) {
 
-          if (mouseX > this.x + j * size &&
-            mouseX < this.x + (j + 1) * size &&
-            mouseY > this.y + i * size &&
-            mouseY < this.y + (i + 1) * size)
+          if (mouseX > this.x + j * size - dx &&
+            mouseX < this.x + (j + 1) * size - dx &&
+            mouseY > this.y + i * size - dy &&
+            mouseY < this.y + (i + 1) * size - dy)
             return true;
         }
       }
@@ -198,21 +166,21 @@ class Board {
     this.h = ndarray.length * SQSIZE
   }
 
-  drawNotes() {
-    for (let i = 0; i < this.arr.length; i++) {
-      for (let j = 0; j < this.arr[0].length; j++) {
+  // drawNotes() {
+  //   for (let i = 0; i < this.arr.length; i++) {
+  //     for (let j = 0; j < this.arr[0].length; j++) {
 
-        let offset = 3
-        let sx = this.x + i * SQSIZE
-        let sy = this.y + j * SQSIZE
-        stroke(255)
-        strokeWeight(5)
-        strokeCap(ROUND)
-        line(sx + offset, sy, sx + SQSIZE - offset, sy)
-        line(sx, sy + offset, sx, sy + SQSIZE - offset)
-      }
-    }
-  }
+  //       let offset = 3
+  //       let sx = this.x + i * SQSIZE
+  //       let sy = this.y + j * SQSIZE
+  //       stroke(255)
+  //       strokeWeight(5)
+  //       strokeCap(ROUND)
+  //       line(sx + offset, sy, sx + SQSIZE - offset, sy)
+  //       line(sx, sy + offset, sx, sy + SQSIZE - offset)
+  //     }
+  //   }
+  // }
 
   draw() {
 
@@ -231,18 +199,6 @@ class Board {
         rect(this.x + j * SQSIZE, this.y + i * SQSIZE, SQSIZE, SQSIZE)
       }
     }
-
-    if (this.ref) {
-      noStroke()
-      fill(0, 50)
-      for (var i = 0; i < this.arr.length; i++) {
-        for (var j = 0; j < this.arr[0].length; j++) {
-          circle(this.x + (j + .5) * SQSIZE, this.y + (i + .5) * SQSIZE, SQSIZE / 2)
-        }
-      }
-    }
-
-    // if (this.ref) this.drawNotes()
   }
 
   mouseOver() {
@@ -251,6 +207,7 @@ class Board {
   }
 
   // snap piece location to closest legal board placement
+  // returns boolean value on sucess or failure
   place() {
     return false
   }
@@ -283,12 +240,7 @@ function mouseDragged() {
 }
 
 function mouseMoved() {
-  if (selected_piece != null) {
-    let piece = gamepieces[selected_piece]
-    piece.x = mouseX
-    piece.y = mouseY
-    redraw()
-  }
+  redraw()
 }
 
 function keyPressed() {
@@ -316,14 +268,12 @@ function mousePressed() {
 
 function mouseReleased() {
   if (selected_piece != null) {
-    if (gameboard.place()) {
-      // TODO
-    } else {
+    if (!gameboard.place()) {
       let piece = gamepieces[selected_piece]
       piece.x = piece.spawn_x
       piece.y = piece.spawn_y
-      selected_piece = null
-      redraw()
     }
+    selected_piece = null
+    redraw()
   }
 }
