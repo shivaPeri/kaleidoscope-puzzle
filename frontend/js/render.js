@@ -252,18 +252,7 @@ class Board {
 
   // snap piece location to closest legal board placement
   place() {
-    if (this.ref) return;
-
-    // TODO
-    //
-
-    if (selected_piece != null) {
-      let piece = gamepieces[selected_piece]
-      piece.x = piece.spawn_x
-      piece.y = piece.spawn_y
-    }
-
-
+    return false
   }
 }
 
@@ -282,6 +271,15 @@ const parseBoard = () => {
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
+}
+
+function mouseDragged() {
+  if (selected_piece != null) {
+    let piece = gamepieces[selected_piece]
+    piece.x = mouseX
+    piece.y = mouseY
+    redraw()
+  }
 }
 
 function mouseMoved() {
@@ -305,16 +303,27 @@ function keyPressed() {
   }
 }
 
-function mouseClicked() {
-  if (selected_piece != null) {
-    gameboard.place()
-    selected_piece = null
-  } else {
+function mousePressed() {
+  if (selected_piece == null) {
     for (var piece of gamepieces) {
       if (piece.mouseOver()) {
         selected_piece = piece.id
       }
     }
+    redraw()
   }
-  redraw()
+}
+
+function mouseReleased() {
+  if (selected_piece != null) {
+    if (gameboard.place()) {
+      // TODO
+    } else {
+      let piece = gamepieces[selected_piece]
+      piece.x = piece.spawn_x
+      piece.y = piece.spawn_y
+      selected_piece = null
+      redraw()
+    }
+  }
 }
