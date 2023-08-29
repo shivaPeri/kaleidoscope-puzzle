@@ -41,6 +41,8 @@ function setup() {
   refboard = new Board(puzzles["new"], start, 100, true)
   gameboard = new Board(puzzles["new2"], start, 100, false)
 
+  console.log(gameboard)
+
   fetch('../../boards/scraped-boards.json')
     .then(response => response.json())
     .then(data => {
@@ -67,6 +69,42 @@ function draw() {
   refboard.draw()
   for (var piece of gamepieces) piece.draw()
 
+  if (selected_piece != null) {
+    let piece = gamepieces[selected_piece]
+
+    noFill()
+    strokeWeight(2)
+    stroke(0, 255, 0)
+    // circle(piece.x, piece.y, SQSIZE)
+
+    let dx = piece.arr.shape[1] * SQSIZE / 2
+    let dy = piece.arr.shape[0] * SQSIZE / 2
+
+    let x = piece.x - dx + SQSIZE / 2
+    let y = piece.y - dy + SQSIZE / 2
+    circle(x, y, SQSIZE)
+
+    let min_d = 100
+    let min_x = 0
+    let min_y = 0
+    let idx = null
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        let bx = gameboard.x + SQSIZE * i + SQSIZE / 2
+        let by = gameboard.y + SQSIZE * j + SQSIZE / 2
+        circle(bx, by, 10)
+        if (dist(x, y, bx, by) < min_d) {
+          min_d = dist(x, y, bx, by)
+          min_x = bx
+          min_y = by
+          idx = [i, j]
+        }
+      }
+    }
+
+    console.log(idx)
+    circle(min_x, min_y, 30)
+  }
 }
 
 /* ***************** CLASSES ******************* */
@@ -77,12 +115,18 @@ class Piece {
     this.arr = nj.array(ndarray)
     this.placed = false
 
+    console.log(this.arr)
+
     // position (spawn based on index)
     var mag = 10
     this.spawn_x = (idx % 6) * (width - mag) * 0.07 + (450)
     this.spawn_y = (~~(idx / 6)) * (height - mag) * 0.05 + (height / 4 * 3)
     this.x = this.spawn_x
     this.y = this.spawn_y
+  }
+
+  dims() {
+    return [this.arr.shape[0], this.arr.shape[1]]
   }
 
   rotate() {
@@ -106,9 +150,10 @@ class Piece {
 
     noStroke()
     let size = selected_piece == this.id ? SQSIZE : MINI_SQSIZE
+    size = this.placed ? SQSIZE : size
+
     let dx = this.arr.shape[1] * size / 2
     let dy = this.arr.shape[0] * size / 2
-
 
     for (var i = 0; i < this.arr.shape[0]; i++) {
       for (var j = 0; j < this.arr.shape[1]; j++) {
@@ -136,6 +181,7 @@ class Piece {
       for (var j = 0; j < this.arr.shape[1]; j++) {
 
         let size = selected_piece == this.id ? SQSIZE : MINI_SQSIZE;
+        size = this.placed ? SQSIZE : size
         let dx = this.arr.shape[1] * size / 2
         let dy = this.arr.shape[0] * size / 2
         if (this.arr.get(i, j, 0) != EMPTY) {
@@ -183,17 +229,17 @@ class Board {
   // }
 
   draw() {
-
+    noStroke()
     for (var i = 0; i < this.arr.length; i++) {
       for (var j = 0; j < this.arr[0].length; j++) {
 
-        noStroke()
         switch (this.arr[i][j]) {
           case RED: this.ref ? fill(REDCLEAR) : fill(REDFILL); break;
           case BLACK: this.ref ? fill(BLACKCLEAR) : fill(BLACKFILL); break;
           case BLUE: this.ref ? fill(BLUECLEAR) : fill(BLUEFILL); break;
           case YELLOW: this.ref ? fill(YELLOWCLEAR) : fill(YELLOWFILL); break;
-          default: stroke(100); strokeWeight(2); noFill();
+          default: fill(255, 10)
+          // default: stroke(100); strokeWeight(2); noFill();
         }
 
         rect(this.x + j * SQSIZE, this.y + i * SQSIZE, SQSIZE, SQSIZE)
@@ -209,11 +255,93 @@ class Board {
   // snap piece location to closest legal board placement
   // returns boolean value on sucess or failure
   place() {
+
+    if (selected_piece != null) {
+      let piece = gamepieces[selected_piece]
+
+      let dx = piece.arr.shape[1] * SQSIZE / 2
+      let dy = piece.arr.shape[0] * SQSIZE / 2
+
+      // x and y of first cell in piece
+      let x = piece.x - dx + SQSIZE / 2
+      let y = piece.y - dy + SQSIZE / 2
+
+      // find min distance cell
+      let min_d = 100
+      let min_x = 0
+      let min_y = 0
+      let min_i = 0
+      let min_j = 0
+
+      for (let i = 0; i < 8; i++) {
+        for (let j = 0; j < 8; j++) {
+          let bx = gameboard.x + SQSIZE * i + SQSIZE / 2
+          let by = gameboard.y + SQSIZE * j + SQSIZE / 2
+
+          if (dist(x, y, bx, by) < min_d) {
+            min_d = dist(x, y, bx, by)
+            min_x = bx
+            min_y = by
+            min_i = i
+            min_j = j
+          }
+        }
+      }
+
+      // bounds check
+      let [w, h] = piece.dims()
+      let piece_fits = true
+      if (min_i + w <= 8 || min_h + h <= 8) {
+        // check all cells are empty
+        for (let i = min_i; i < min_i + w; i++) {
+          for (let j = min_j; j < min_j + h; j++) {
+            if (gameboard.arr[i][j] != -1) {
+              piece_fits = false
+            }
+          }
+        }
+
+      }
+
+      // actually place piece onto board
+      if (piece_fits) {
+        for (let i = min_i; i < min_i + w; i++) {
+          for (let j = min_j; j < min_j + h; j++) {
+            if (piece.arr.get(i - min_i, j - min_j, 0) != 0) {
+              gameboard.arr[i][j] = selected_piece
+            }
+          }
+        }
+
+        piece.placed = true
+        piece.x = min_x + SQSIZE / 2
+        piece.y = min_y + SQSIZE / 2
+        selected_piece = null
+        return true
+      }
+
+      // unmark board
+      for (let i = 0; i < 8; i++) {
+        for (let j = 0; j < 8; j++) {
+          if (gameboard.arr[i][j] == selected_piece) {
+            gameboard.arr[i][j] = -1
+          }
+        }
+      }
+      piece.placed = false
+      piece.x = piece.spawn_x
+      piece.y = piece.spawn_y
+    }
+
     return false
   }
 }
 
 /* ***************** HELPER FUNCTIONS ******************* */
+
+const dist = (x1, y1, x2, y2) => {
+  return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2))
+}
 
 const parseBoard = () => {
   let str = games[selector.value()]
@@ -267,13 +395,12 @@ function mousePressed() {
 }
 
 function mouseReleased() {
+  console.log(gameboard)
   if (selected_piece != null) {
-    if (!gameboard.place()) {
-      let piece = gamepieces[selected_piece]
-      piece.x = piece.spawn_x
-      piece.y = piece.spawn_y
-    }
+    gameboard.place()
     selected_piece = null
     redraw()
   }
+
+  console.log(gameboard)
 }
