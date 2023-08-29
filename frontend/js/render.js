@@ -2,7 +2,7 @@
 const SQSIZE = 60
 const MINI_SQSIZE = 10
 
-const alpha = "aa"
+const alpha = "88"
 const RED_FILL = "#db3939"
 const BLACK_FILL = "#212121"
 const BLUE_FILL = "#2059a8"
@@ -64,47 +64,18 @@ function draw() {
   background(255)
 
   if (board != undefined) {
-    console.log("called")
     board.draw()
   }
 
   for (var piece of gamepieces) piece.draw()
 
+  // if (board != undefined) {
+  //   board.drawDebugView()
+  // }
+
   // if (selected_piece != null) {
   //   let piece = gamepieces[selected_piece]
-
-  //   noFill()
-  //   strokeWeight(2)
-  //   stroke(0, 255, 0)
-  //   // circle(piece.x, piece.y, SQSIZE)
-
-  //   let dx = piece.arr.shape[1] * SQSIZE / 2
-  //   let dy = piece.arr.shape[0] * SQSIZE / 2
-
-  //   let x = piece.x - dx + SQSIZE / 2
-  //   let y = piece.y - dy + SQSIZE / 2
-  //   circle(x, y, SQSIZE)
-
-  //   let min_d = SQSIZE
-  //   let min_x = 0
-  //   let min_y = 0
-  //   let idx = null
-  //   for (let i = 0; i < 8; i++) {
-  //     for (let j = 0; j < 8; j++) {
-  //       let bx = gameboard.x + SQSIZE * i + SQSIZE / 2
-  //       let by = gameboard.y + SQSIZE * j + SQSIZE / 2
-  //       circle(bx, by, 10)
-  //       if (dist(x, y, bx, by) < min_d) {
-  //         min_d = dist(x, y, bx, by)
-  //         min_x = bx
-  //         min_y = by
-  //         idx = [i, j]
-  //       }
-  //     }
-  //   }
-
-  //   console.log(idx)
-  //   circle(min_x, min_y, 30)
+  //   piece.drawDebugView()
   // }
 }
 
@@ -120,12 +91,9 @@ class Piece {
     var mag = 10
     let spawn_x = (idx % 6) * (width - mag) * 0.07 + (450)
     let spawn_y = (~~(idx / 6)) * (height - mag) * 0.05 + (height / 4 * 3)
-    this.spawn_x = spawn_x
-    this.spawn_y = spawn_y
-    this.x = this.spawn_x
-    this.y = this.spawn_y
-
     this.spawn_pos = createVector(spawn_x, spawn_y)
+
+    // centered position of piece
     this.pos = this.spawn_pos.copy()
   }
 
@@ -137,8 +105,8 @@ class Piece {
   rotate() {
     if (selected_piece == this.id) {
       this.arr = nj.rot90(this.arr)
-      this.x = mouseX + (this.y - mouseY)
-      this.y = mouseY + (this.x - mouseX)
+      this.pos.x = mouseX + (this.pos.y - mouseY)
+      this.pos.y = mouseY + (this.pos.x - mouseX)
       redraw()
     }
   }
@@ -158,19 +126,34 @@ class Piece {
     return size
   }
 
-  // returns a vector for center of drawn piece
-  getCenter() {
+  // returns a vector for top left pixel of where to start drawing piece
+  // this vector acts as the anchor which we use to try to snap to board
+  getAnchor() {
     let size = this.getSqSize()
     let dx = this.arr.shape[1] * size / 2
     let dy = this.arr.shape[0] * size / 2
     return createVector(this.pos.x - dx, this.pos.y - dy)
   }
 
-  draw() {
+  // given anchor point, match pieces anchor point and recompute new center position
+  snapTo(anchor) {
+    let size = this.getSqSize()
+    let dx = this.arr.shape[1] * size / 2
+    let dy = this.arr.shape[0] * size / 2
 
+    this.pos.x = anchor.x + dx
+    this.pos.y = anchor.y + dy
+  }
+
+  respawn() {
+    this.pos = this.spawn_pos.copy()
+    this.placed = false
+  }
+
+  draw() {
     noStroke()
     let size = this.getSqSize()
-    let center = this.getCenter()
+    let start = this.getAnchor()
 
     for (var i = 0; i < this.arr.shape[0]; i++) {
       for (var j = 0; j < this.arr.shape[1]; j++) {
@@ -183,35 +166,67 @@ class Piece {
           default: continue;
         }
 
-        rect(center.x + j * size, center.y + i * size, size, size)
+        rect(start.x + j * size, start.y + i * size, size, size)
 
         if (this.mouseOver()) {
           fill(255, 255, 255, 50)
-          rect(center.x + j * size, center.y + i * size, size, size)
+          rect(start.x + j * size, start.y + i * size, size, size)
         }
       }
     }
+  }
+
+  drawDebugView() {
+    noFill()
+    strokeWeight(2)
+    stroke(0, 255, 0)
+    circle(this.pos.x, this.pos.y, SQSIZE)
+
+    let anchor = this.getAnchor()
+    circle(anchor.x, anchor.y, SQSIZE)
+
+    // find min distance cell
+    let min_d = SQSIZE
+    let min_x = board.pos.x
+    let min_y = board.pos.y
+    let idx = null
+
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        let bx = board.pos.x + SQSIZE * i
+        let by = board.pos.y + SQSIZE * j
+        circle(bx, by, 10)
+        let d = dist(anchor.x, anchor.y, bx, by)
+
+        if (d < min_d) {
+          min_d = d
+          min_x = bx
+          min_y = by
+          idx = [i, j]
+        }
+      }
+    }
+
+    // console.log(idx)
+    circle(min_x, min_y, 30)
   }
 
   mouseOver() {
     for (var i = 0; i < this.arr.shape[0]; i++) {
       for (var j = 0; j < this.arr.shape[1]; j++) {
 
-        let size = selected_piece == this.id ? SQSIZE : MINI_SQSIZE;
-        size = this.placed ? SQSIZE : size
-        let dx = this.arr.shape[1] * size / 2
-        let dy = this.arr.shape[0] * size / 2
+        let size = this.getSqSize()
+        let start = this.getAnchor()
         if (this.arr.get(i, j, 0) != EMPTY) {
 
-          if (mouseX > this.x + j * size - dx &&
-            mouseX < this.x + (j + 1) * size - dx &&
-            mouseY > this.y + i * size - dy &&
-            mouseY < this.y + (i + 1) * size - dy)
+          if (mouseX > start.x + j * size &&
+            mouseX < start.x + (j + 1) * size &&
+            mouseY > start.y + i * size &&
+            mouseY < start.y + (i + 1) * size)
             return true;
         }
       }
     }
-
     return false;
   }
 
@@ -292,8 +307,8 @@ class Board {
 
       for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 8; j++) {
-          let bx = gameboard.x + SQSIZE * i + SQSIZE / 2
-          let by = gameboard.y + SQSIZE * j + SQSIZE / 2
+          let bx = gameboard.x + SQSIZE * i
+          let by = gameboard.y + SQSIZE * j
 
           if (dist(x, y, bx, by) < min_d) {
             min_d = dist(x, y, bx, by)
@@ -331,8 +346,7 @@ class Board {
         }
 
         piece.placed = true
-        piece.x = min_x + SQSIZE / 2
-        piece.y = min_y + SQSIZE / 2
+        piece.snapTo(createVector(min_x, min_y))
         selected_piece = null
         return true
       }
@@ -361,7 +375,7 @@ class Board2 {
     this.sol = nj.zeros([8, 8]).subtract(1)
     this.ref = nj.zeros([8, 8])
     this.parseBoard()
-    this.notes = notes
+    // this.notes = notes
 
     this.width = 8 * SQSIZE
     this.height = 8 * SQSIZE
@@ -377,12 +391,23 @@ class Board2 {
           case BLUE: fill(BLUE_FILL + alpha); break;
           case YELLOW: fill(YELLOW_FILL + alpha); break;
         }
-        rect(this.x + j * SQSIZE, this.y + i * SQSIZE, SQSIZE, SQSIZE)
+        rect(this.pos.x + j * SQSIZE, this.pos.y + i * SQSIZE, SQSIZE, SQSIZE)
       }
     }
   }
 
-  // rotates board by 90 degrees
+  drawDebugView() {
+    for (var i = 0; i < 8; i++) {
+      for (var j = 0; j < 8; j++) {
+        let tmp = `(${i},${j})=${this.sol.get(i, j)}`
+        fill(0)
+
+        text(tmp, this.pos.x + j * SQSIZE, this.pos.y + i * SQSIZE)
+      }
+    }
+  }
+
+  // rotates board state by 90 degrees
   rotate() {
     this.sol = nj.rot90(this.sol)
     this.ref = nj.rot90(this.ref)
@@ -399,91 +424,100 @@ class Board2 {
   }
 
   mouseOver() {
-    return (mouseX > this.x && mouseX < this.x + this.width &&
-      mouseY > this.y && mouseY < this.y + this.height)
+    return (mouseX > this.pos.x && mouseX < this.pos.x + this.width &&
+      mouseY > this.pos.y && mouseY < this.pos.y + this.height)
+  }
+
+  // unmarks current selected piece from solution board
+  undo() {
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        if (this.sol.get(i, j) == selected_piece) {
+          this.sol.set(i, j, -1)
+        }
+      }
+    }
   }
 
   // snap piece location to closest legal board placement
   // returns boolean value on sucess or failure
   place() {
 
+    // safety check
     if (selected_piece != null) {
       let piece = gamepieces[selected_piece]
 
-      let dx = piece.arr.shape[1] * SQSIZE / 2
-      let dy = piece.arr.shape[0] * SQSIZE / 2
+      // only try to place piece if mouse is on the board
+      if (this.mouseOver()) {
+        let anchor = piece.getAnchor()
 
-      // x and y of first cell in piece
-      let x = piece.x - dx + SQSIZE / 2
-      let y = piece.y - dy + SQSIZE / 2
+        // find min distance cell
+        let min_d = SQSIZE
+        let min_x = this.pos.x
+        let min_y = this.pos.y
+        let min_i = null
+        let min_j = null
 
-      // find min distance cell
-      let min_d = SQSIZE
-      let min_x = gameboard.x
-      let min_y = gameboard.y
-      let min_i = 0
-      let min_j = 0
+        for (let i = 0; i < 8; i++) {
+          for (let j = 0; j < 8; j++) {
+            let bx = this.pos.x + SQSIZE * i
+            let by = this.pos.y + SQSIZE * j
+            let d = dist(anchor.x, anchor.y, bx, by)
 
-      for (let i = 0; i < 8; i++) {
-        for (let j = 0; j < 8; j++) {
-          let bx = gameboard.x + SQSIZE * i + SQSIZE / 2
-          let by = gameboard.y + SQSIZE * j + SQSIZE / 2
-
-          if (dist(x, y, bx, by) < min_d) {
-            min_d = dist(x, y, bx, by)
-            min_x = bx
-            min_y = by
-            min_i = i
-            min_j = j
-          }
-        }
-      }
-
-      // bounds check
-      let [w, h] = piece.dims()
-      let piece_fits = true
-      if (min_i + w <= 8 || min_h + h <= 8) {
-        // check all cells are empty
-        for (let i = min_i; i < min_i + w; i++) {
-          for (let j = min_j; j < min_j + h; j++) {
-            if (gameboard.arr[i][j] != -1) {
-              piece_fits = false
+            if (d < min_d) {
+              min_d = d
+              min_x = bx
+              min_y = by
+              min_i = j
+              min_j = i
             }
           }
         }
 
-      }
+        // bounds check
+        let [w, h] = piece.dims()
 
-      // actually place piece onto board
-      if (piece_fits) {
-        for (let i = min_i; i < min_i + w; i++) {
-          for (let j = min_j; j < min_j + h; j++) {
-            if (piece.arr.get(i - min_i, j - min_j, 0) != 0) {
-              gameboard.arr[i][j] = selected_piece
+        let piece_fits = true
+
+        if (min_i + w <= 8 || min_j + h <= 8) {
+          // check all cells are empty
+          for (let i = min_i; i < min_i + w; i++) {
+            for (let j = min_j; j < min_j + h; j++) {
+              if (piece.arr.get(i - min_i, j - min_j, 0) != 0) {
+                if (this.sol.get(i, j) != -1) {
+                  piece_fits = false
+                }
+              }
+
             }
           }
         }
 
-        piece.placed = true
-        piece.x = min_x + SQSIZE / 2
-        piece.y = min_y + SQSIZE / 2
-        selected_piece = null
-        return true
-      }
-
-      // unmark board
-      for (let i = 0; i < 8; i++) {
-        for (let j = 0; j < 8; j++) {
-          if (gameboard.arr[i][j] == selected_piece) {
-            gameboard.arr[i][j] = -1
-          }
+        if (!piece_fits) {
+          console.log(selected_piece, " does not fit")
+          console.log(this.sol)
         }
+
+        // place piece onto board's solution
+        if (piece_fits) {
+          for (let i = min_i; i < min_i + w; i++) {
+            for (let j = min_j; j < min_j + h; j++) {
+              if (piece.arr.get(i - min_i, j - min_j, 0) != 0) {
+                this.sol.set(i, j, selected_piece)
+              }
+            }
+          }
+
+          piece.placed = true
+          piece.snapTo(createVector(min_x, min_y))
+          console.log("placed piece ", selected_piece)
+          return true
+        }
+
       }
-      piece.placed = false
-      piece.x = piece.spawn_x
-      piece.y = piece.spawn_y
+      piece.respawn()
+      board.undo()
     }
-
     return false
   }
 }
@@ -512,15 +546,15 @@ function windowResized() {
 function mouseDragged() {
   if (selected_piece != null) {
     let piece = gamepieces[selected_piece]
-    piece.x = mouseX
-    piece.y = mouseY
+    piece.pos.x = mouseX
+    piece.pos.y = mouseY
     redraw()
   }
 }
 
-function mouseMoved() {
-  redraw()
-}
+// function mouseMoved() {
+//   redraw()
+// }
 
 function keyPressed() {
   if (selected_piece != null) {
@@ -546,12 +580,9 @@ function mousePressed() {
 }
 
 function mouseReleased() {
-  console.log(gameboard)
   if (selected_piece != null) {
-    gameboard.place()
+    board.place()
     selected_piece = null
     redraw()
   }
-
-  console.log(gameboard)
 }
