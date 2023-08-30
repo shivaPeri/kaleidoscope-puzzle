@@ -13,10 +13,14 @@ i scraped some of the boards from Mike's Kaleidoscope Classic Page ([page 1](htt
     <img height="250" src="./src/demo.png" caption="Solver Demo">
 </p>
 
+[play online version here](https://play-kaleidoscope.glitch.me)
+
 JS-based frontend (left) and terminal-based solver (right). In the solution, each grouping of the same letter represents on piece. The solver currently uses naiive backtracking and is fast on most boards. However, there is still a lot of room for optimization :)
 
 
 ## Running 
+
+this is under construction and probably won't work right now (8.29.23)
 
 to run the frontend
 ```
