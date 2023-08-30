@@ -29,6 +29,8 @@ pub trait Kaleidoscope {
     fn play(&mut self, mv: &Self::Move);
     fn undo(&mut self, mv: Self::Move);
     fn possible(&self, piece: usize, reverse: bool) -> Vec<Self::Move>;
+
+    fn rotate90(&self, times: u8) -> Self;
 }
 
 pub trait Solver<T>
@@ -79,6 +81,26 @@ impl BitRepresentation {
         }
         pieces
     }
+
+    fn rotate90(refboard: u128) -> u128 {
+        let mut tmp: [[u128; 8]; 8] = [[0; 8]; 8];
+        let mask: u128 = 0b11 << 126;
+        for i in 0..64 {
+            let val = refboard & mask >> 126;
+            let x: usize = i / 8;
+            let y: usize = i % 8;
+            tmp[x][y] = val;
+        }
+
+        let mut res: u128 = 0;
+        for i in (0..8).rev() {
+            for j in 0..8 {
+                res |= tmp[i][j] & 0b11;
+                res <<= 2;
+            }
+        }
+        res
+    }
 }
 
 impl Kaleidoscope for BitRepresentation {
@@ -93,7 +115,6 @@ impl Kaleidoscope for BitRepresentation {
             board: 0,
             refboard,
             pieces: Self::load_pieces_from_file("python/pieces3.txt"),
-            // pieces: Self::load_pieces_from_file("python/pieces.txt"),
         }
     }
 
@@ -135,14 +156,6 @@ impl Kaleidoscope for BitRepresentation {
     // assumes move is legal
     fn play(&mut self, mv: &Self::Move) {
         self.board |= mv.mask;
-        // let mask_overlap = &self.board & mv.mask == 0;
-        // let pattern_overlap = &self.refboard & mv.mask == mv.bitpattern;
-
-        // if mask_overlap && pattern_overlap {
-        //     self.board |= mv.mask;
-        // } else {
-        //     panic!("illegal placement")
-        // }
     }
 
     fn undo(&mut self, mv: Self::Move) {
@@ -163,6 +176,19 @@ impl Kaleidoscope for BitRepresentation {
             possible_moves.reverse();
         }
         possible_moves
+    }
+
+    fn rotate90(&self, times: u8) -> Self {
+        let mut refboard = self.refboard.clone();
+        for i in 0..(times % 4) {
+            refboard = BitRepresentation::rotate90(refboard);
+        }
+
+        Self {
+            board: 0,
+            refboard,
+            pieces: Self::load_pieces_from_file("python/pieces3.txt"),
+        }
     }
 }
 
@@ -422,6 +448,18 @@ impl VectorRepresentation {
     pub fn board_idx(&self, x: usize, y: usize) -> usize {
         return x * 8 + y;
     }
+
+    fn rotate90(refboard: &[u8; 64]) -> [u8; 64] {
+        let mut res: [u8; 64] = [0; 64];
+        let mut idx: usize = 0;
+        for i in (0..8).rev() {
+            for j in 0..8 {
+                res[idx] = refboard[i * 8 + j];
+                idx += 1;
+            }
+        }
+        res
+    }
 }
 
 impl Kaleidoscope for VectorRepresentation {
@@ -585,6 +623,19 @@ impl Kaleidoscope for VectorRepresentation {
             res.reverse();
         }
         res
+    }
+
+    fn rotate90(&self, times: u8) -> Self {
+        let mut refboard = self.refboard.clone();
+        for i in 0..(times % 4) {
+            refboard = VectorRepresentation::rotate90(&refboard);
+        }
+
+        Self {
+            board: [None; 64],
+            refboard,
+            pieces: Self::load_pieces(),
+        }
     }
 }
 
