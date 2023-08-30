@@ -1,44 +1,56 @@
 
-const SQSIZE = 60
+const SQSIZE = 40
 const MINI_SQSIZE = 10
 
-const alpha = "88"
+const alpha = "55"
 const RED_FILL = "#db3939"
 const BLACK_FILL = "#212121"
 const BLUE_FILL = "#2059a8"
 const YELLOW_FILL = "#ffde24"
 
+let cnv
+
 let gamepieces = []
-let refboard, gameboard
 let board
 let games
 let game_name = "australian-emu"
-// let game_name = "girl-wearing-cowboy-hat"
 
 let selector
+let selector_size = 200;
 let selected_piece = null
+
+let rotateRegion
+let flipRegion
+
+let mobile_offset
 
 /* ***************** INIT + MAIN LOOP ******************* */
 
 function setup() {
 
   // canvas HTML object
-  var cnv = createCanvas(window.innerWidth, window.innerHeight);
+  cnv = createCanvas(windowWidth, windowHeight);
   cnv.position(0, 0, 'fixed')
 
   // game selector dropdown
-  selector_size = 200;
+
   selector = createSelect();
   selector.size(selector_size);
-  selector.position((width - selector_size) / 2, 70)
+  selector.position((width - selector_size) / 2, 70, 'fixed')
   selector.changed(() => {
     board.init()
     for (var piece of gamepieces) piece.respawn()
+    redraw()
   });
 
-  let start_x = (width - (8 * SQSIZE)) / 2
+  let h = 100
+  rotateRegion = new HoverRegion(width / 2, height - h, width / 2, h, 'rotate')
+  flipRegion = new HoverRegion(0, height - h, width / 2, h, 'flip')
 
-  fetch('../../boards/scraped-boards.json')
+  let start_x = (width - (8 * SQSIZE)) / 2
+  mobile_offset = isMobile() ? -80 : 0
+
+  fetch('./boards.json')
     .then(response => response.json())
     .then(data => {
       games = data
@@ -48,7 +60,6 @@ function setup() {
       }
       selector.selected(game_name)
       board = new Board(start_x, 100)
-      console.log(board)
 
       draw()
     })
@@ -60,6 +71,12 @@ function setup() {
   noLoop()
 }
 
+function init() {
+  let start_x = (width - (8 * SQSIZE)) / 2
+  board.pos.x = start_x
+  selector.position((width - selector_size) / 2, 70, 'fixed')
+}
+
 function draw() {
   background(255)
 
@@ -67,17 +84,21 @@ function draw() {
     board.draw()
   }
 
+  rotateRegion.draw()
+  flipRegion.draw()
+
   for (var piece of gamepieces) piece.draw()
 
-  // if (board != undefined) {
-  //   board.drawDebugView()
-  // }
+  //   if (board != undefined) {
+  //     board.drawDebugView()
+  //   }
 
-  // if (selected_piece != null) {
-  //   let piece = gamepieces[selected_piece]
-  //   piece.drawDebugView()
-  // }
+  //   if (selected_piece != null) {
+  //     let piece = gamepieces[selected_piece]
+  //     piece.drawDebugView()
+  //   }
 }
+
 
 /* ***************** CLASSES ******************* */
 
@@ -88,9 +109,9 @@ class Piece {
     this.placed = false
 
     // position (spawn based on index)
-    var mag = 10
-    let spawn_x = (idx % 6) * (width - mag) * 0.07 + (450)
-    let spawn_y = (~~(idx / 6)) * (height - mag) * 0.05 + (height / 4 * 3)
+    var mag = 50
+    let spawn_x = mag + (idx % 6) * (width - mag) / 6
+    let spawn_y = (~~(idx / 6)) * (height - mag) * 0.05 + (height * 0.70)
     this.spawn_pos = createVector(spawn_x, spawn_y)
 
     // centered position of piece
@@ -105,8 +126,6 @@ class Piece {
   rotate() {
     if (selected_piece == this.id) {
       this.arr = nj.rot90(this.arr)
-      this.pos.x = mouseX + (this.pos.y - mouseY)
-      this.pos.y = mouseY + (this.pos.x - mouseX)
       redraw()
     }
   }
@@ -212,6 +231,7 @@ class Piece {
   }
 
   mouseOver() {
+
     for (var i = 0; i < this.arr.shape[0]; i++) {
       for (var j = 0; j < this.arr.shape[1]; j++) {
 
@@ -247,7 +267,6 @@ class Board {
 
   init() {
     this.sol = nj.zeros([8, 8]).subtract(1)
-    this.ref = nj.zeros([8, 8])
     this.parseBoardString()
   }
 
@@ -291,11 +310,14 @@ class Board {
       let col = i % 8;
       this.ref.set(row, col, parseInt(str[i]))
     }
+    redraw()
   }
 
   mouseOver() {
-    return (mouseX > this.pos.x && mouseX < this.pos.x + this.width &&
-      mouseY > this.pos.y && mouseY < this.pos.y + this.height)
+    let x = mouseX
+    let y = mouseY + mobile_offset
+    return (x > this.pos.x && x < this.pos.x + this.width &&
+      y > this.pos.y && y < this.pos.y + this.height)
   }
 
   // unmarks current selected piece from solution board
@@ -348,8 +370,9 @@ class Board {
         let [w, h] = piece.dims()
 
         let piece_fits = true
+        console.log(min_i + w, min_j + h)
 
-        if (min_i + w <= 8 || min_j + h <= 8) {
+        if (min_i + w <= 8 && min_j + h <= 8) {
           // check all cells are empty
           for (let i = min_i; i < min_i + w; i++) {
             for (let j = min_j; j < min_j + h; j++) {
@@ -361,6 +384,8 @@ class Board {
 
             }
           }
+        } else {
+          piece_fits = false
         }
 
         if (!piece_fits) {
@@ -392,28 +417,77 @@ class Board {
   }
 }
 
+class HoverRegion {
+  constructor(x, y, w, h, fn) {
+    this.pos = createVector(x, y)
+    this.w = w
+    this.h = h
+
+    this.start = millis()
+    this.delay = 500
+    this.fn = fn
+  }
+
+  draw() {
+    noStroke()
+    fill(240)
+    rect(this.pos.x, this.pos.y, this.w, this.h)
+    fill(0)
+    textAlign(CENTER)
+    text(`hover to ${this.fn}`, this.pos.x + this.w / 2, this.pos.y + this.h / 2)
+  }
+
+  mouseOver() {
+    return (mouseX > this.pos.x && mouseX < this.pos.x + this.w &&
+      mouseY > this.pos.y && mouseY < this.pos.y + this.h)
+  }
+
+  poll() {
+    if (this.mouseOver() && millis() >= this.start + this.delay) {
+      let piece = gamepieces[selected_piece]
+      if (this.fn == 'rotate') {
+        piece.rotate()
+      } else {
+        piece.flip()
+      }
+      this.start = millis()
+    }
+  }
+}
+
 /* ***************** HELPER FUNCTIONS ******************* */
 
 const dist = (x1, y1, x2, y2) => {
   return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2))
 }
 
+const isMobile = () => {
+  var check = false;
+  (function(a) {
+    if (/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(a) || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0, 4)))
+      check = true;
+  })(navigator.userAgent || navigator.vendor || window.opera);
+  return check;
+};
+
 /* ***************** EVENT HANDLERS ******************* */
 
 function windowResized() {
+  console.log("called")
   resizeCanvas(windowWidth, windowHeight);
+  init()
 }
 
 function mouseDragged() {
   if (selected_piece != null) {
     let piece = gamepieces[selected_piece]
-    piece.pos.x = mouseX
-    piece.pos.y = mouseY
-    redraw()
-  }
-}
 
-function mouseMoved() {
+    piece.pos.x = mouseX
+    piece.pos.y = mouseY + mobile_offset
+
+    rotateRegion.poll()
+    flipRegion.poll()
+  }
   redraw()
 }
 
@@ -436,14 +510,19 @@ function mousePressed() {
         selected_piece = piece.id
       }
     }
-    redraw()
+    let piece_ = gamepieces[selected_piece]
+    piece_.pos.x = mouseX
+    piece_.pos.y = mouseY + mobile_offset
   }
+  redraw()
 }
 
 function mouseReleased() {
   if (selected_piece != null) {
     board.place()
     selected_piece = null
-    redraw()
   }
+  redraw()
 }
+
+document.addEventListener('contextmenu', event => event.preventDefault());
