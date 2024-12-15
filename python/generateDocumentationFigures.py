@@ -1,6 +1,7 @@
 import json
 import numpy as np
 from PIL import Image
+from tqdm import tqdm
 
 class CanvasFrame():
     def __init__(self, width, height):
@@ -29,9 +30,21 @@ class CanvasFrame():
         # default case
         return np.array([0, 0, 0, 0])                           # transparent
     
+    def _apply_mask_value(self, color):
+        return color == "1" or color == "11"
+    
     def _get_mask_color(self, color):
-        if color == "0": return np.array([0, 0, 0, 255])   # black
-        return np.array([255, 255, 255, 255])              # white
+        
+        # 1 bit colors
+        if color == "0": return np.array([0, 0, 0, 255])        # black
+        if color == "1": return np.array([255, 255, 255, 255])  # white
+        
+        # 2-bit colors
+        if color == "00": return np.array([0, 0, 0, 255])       # black
+        if color == "11": return np.array([255, 255, 255, 255]) # white
+        
+        # default case
+        return np.array([0, 0, 0, 0])                           # transparent
     
     def _get_board_array(self, board):
         colors = []
@@ -43,6 +56,13 @@ class CanvasFrame():
         assert len(colors) == 64
         return colors
     
+    # clear a given section of the data array 
+    def _clear_area(self, x, y, w, h):
+        for i in range(x, x+w):
+            for j in range(y, y+h):
+                if self._in_bounds(i,j):
+                    self.data[i,j,:] = 0
+    
     def load_board_from_file(board_title="chaos", input_path="../boards/boards.json"):
         with open(input_path, 'r') as fd:
             data = json.load(fd)
@@ -50,39 +70,45 @@ class CanvasFrame():
     
     # adds 64x1 line to data array from color array
     # guarenteed len(colors) == 64
-    def draw_bitvector(self, board, x=0, y=0, is_mask=False):
+    def draw_bitvector(self, board, x=0, y=0, draw_mask=False):
         colors = self._get_board_array(board)
+        self._clear_area(x, y, 1, 64)
         for i in range(64):    
             cell = colors[i]
-            if is_mask:
-                self.data[x][y + i] = self._get_mask_color(cell)
-            else:
-                self.data[x][y + i] = self._get_cell_color(cell)
+            x_pos, y_pos = x, y + i
+            if self._in_bounds(x_pos, y_pos):
+                if draw_mask:
+                    self.data[x_pos][y_pos] = self._get_mask_color(cell)
+                else:
+                    self.data[x_pos][y_pos] = self._get_cell_color(cell)
         
     # adds 8x8 square to data array from color array
     # guarenteed len(colors) == 64
-    def draw_board(self, board, x=0, y=0, is_mask=False):
+    def draw_board(self, board, x=0, y=0, mask=None, draw_mask=False):
         colors = self._get_board_array(board)
+
+        if mask is not None:
+            mask_values = self._get_board_array(mask)
+        
+        self._clear_area(x, y, 8, 8)
         for i in range(8):    
             for j in range(8):
-                if self._in_bounds(i,j):
-                    cell = colors[i * 8 + j]
-                    if is_mask:
-                        self.data[x + i][y + j] = self._get_mask_color(cell)
-                    else:
-                        self.data[x + i][y + j] = self._get_cell_color(cell)
-    
-    # clear a given section of the data array 
-    def clear_area(self, x, y, w, h):
-        for i in range(x, x+w):
-            for j in range(y, y+h):
-                if self._in_bounds(i,j):
-                    self.data[i,j,:] = 0
+                flat_idx = i * 8 + j
+                cell = colors[flat_idx]
+                mask_value = self._apply_mask_value(mask_values[flat_idx]) if mask is not None else True
+                
+                if mask_value:
+                    x_pos, y_pos = x + i, y + j
+                    if self._in_bounds(x_pos, y_pos):
+                        if draw_mask:
+                            self.data[x_pos][y_pos] = self._get_mask_color(cell)
+                        else:
+                            self.data[x_pos][y_pos] = self._get_cell_color(cell)
     
     # return a PIL image frame
     def generate_frame(self):
         w, h = self.width, self.height
-        img = Image.new("RGBA", (w, h))
+        img = Image.new("RGBA", (h,w))
         pixels = self.data.reshape(w*h, 4)
         pixels = [(item[0], item[1], item[2], item[3]) for item in pixels]
         img.putdata(pixels)
@@ -116,24 +142,63 @@ def test():
     for i in range(64):
         board_string = str(1+ i % 4) * i + "0" * (64-i)
         canvas.draw_board(board_string)
-        canvas.draw_board(board_string, 10, 10)
+        canvas.draw_board(board_string, 3, 10)
         frame = canvas.generate_frame()
         animation.add_frame(frame)
         
     animation.export()
+    
+def get_piece_placements(index=-1):
+    with open("./pieces3.txt", "r") as fd:
+        file_content = fd.read()
+        pieces = file_content.split("\n\n")
+        pieces = [ piece for piece in pieces if len(piece) > 0 ]
+        
+        # array of all possible configurations
+        selected_piece = pieces[index].split("\n")
+        return selected_piece
 
 def generate_figure_1():
     # this figure should show the process of pieces are converted to bit strings
     
     board_size = 8
     bitvector_size = board_size * board_size
-    spacing = 2
+    horizontal_spacing = 2
+    vertical_spacing = 1
     row_items = [board_size, board_size, bitvector_size, bitvector_size]
     
-    canvas_width = sum(row_items) + (len(row_items) - 1) * spacing
-    canvas_height = 1000
+    piece_idx = 17
+    piece_placements = get_piece_placements(piece_idx)
+    canvas_height = sum(row_items) + (len(row_items) - 1) * horizontal_spacing
+    canvas_width = max(8, len(piece_placements) * vertical_spacing)
+    
+    animation = PixelAnimation()
+    canvas = CanvasFrame(canvas_width, canvas_height)
+    
+    start_x = 0
+    for frame_idx, placement in tqdm(enumerate(piece_placements)):
+        mask, board = placement.split(",")
+        
+        start_y = 0
+        canvas.draw_board(board, 0, start_y, mask=mask)
+        start_y += board_size + horizontal_spacing
+        
+        canvas.draw_board(mask, 0, start_y, draw_mask=True)
+        start_y += board_size + horizontal_spacing
+        
+        canvas.draw_bitvector(board, start_x, start_y)
+        start_y += bitvector_size + horizontal_spacing
+        
+        canvas.draw_bitvector(mask, start_x, start_y, draw_mask=True)
+        start_x += vertical_spacing
+        
+        frame = canvas.generate_frame()
+        animation.add_frame(frame)
+        
+    animation.export(out_path=f"piece_{piece_idx}_placements.png")
     
 
 if __name__ == "__main__":
     print("started")
-    test()
+    generate_figure_1()
+    # test()
